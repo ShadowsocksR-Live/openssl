@@ -87,7 +87,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;OPENSSL_USE_APPLINK;DSO_WIN32;OPENSSL_THREADS;OPENSSL_NO_STATIC_ENGINE;OPENSSL_PIC;OPENSSL_SYS_WIN32;WIN32_LEAN_AND_MEAN;_WINSOCK_DEPRECATED_NO_WARNINGS;L_ENDIAN;_CRT_SECURE_NO_DEPRECATE;ENGINESDIR="C:/Program Files (x86)/OpenSSL/lib/engines-1_1";OPENSSLDIR="C:/Program Files (x86)/Common Files/SSL";compiler_flags="compiler_flags";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;OPENSSL_USE_APPLINK;DSO_WIN32;OPENSSL_THREADS;OPENSSL_NO_STATIC_ENGINE;OPENSSL_PIC;OPENSSL_SYS_WIN32;WIN32_LEAN_AND_MEAN;_WINSOCK_DEPRECATED_NO_WARNINGS;L_ENDIAN;_CRT_SECURE_NO_DEPRECATE;ENGINESDIR="C:/Program Files (x86)/OpenSSL/lib/engines-1_1";OPENSSLDIR="C:/Program Files (x86)/Common Files/SSL";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)../include;$(ProjectDir)../..;$(ProjectDir)../../include;$(ProjectDir)../../crypto/include;$(ProjectDir)../../crypto/modes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -103,7 +103,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;OPENSSL_USE_APPLINK;DSO_WIN32;OPENSSL_THREADS;OPENSSL_NO_STATIC_ENGINE;OPENSSL_PIC;OPENSSL_SYS_WIN32;WIN32_LEAN_AND_MEAN;_WINSOCK_DEPRECATED_NO_WARNINGS;L_ENDIAN;_CRT_SECURE_NO_DEPRECATE;ENGINESDIR="C:/Program Files (x86)/OpenSSL/lib/engines-1_1";OPENSSLDIR="C:/Program Files (x86)/Common Files/SSL";compiler_flags="compiler_flags";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;OPENSSL_USE_APPLINK;DSO_WIN32;OPENSSL_THREADS;OPENSSL_NO_STATIC_ENGINE;OPENSSL_PIC;OPENSSL_SYS_WIN32;WIN32_LEAN_AND_MEAN;_WINSOCK_DEPRECATED_NO_WARNINGS;L_ENDIAN;_CRT_SECURE_NO_DEPRECATE;ENGINESDIR="C:/Program Files (x86)/OpenSSL/lib/engines-1_1";OPENSSLDIR="C:/Program Files (x86)/Common Files/SSL";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)../include;$(ProjectDir)../..;$(ProjectDir)../../include;$(ProjectDir)../../crypto/include;$(ProjectDir)../../crypto/modes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -121,7 +121,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;OPENSSL_USE_APPLINK;DSO_WIN32;OPENSSL_THREADS;OPENSSL_NO_STATIC_ENGINE;OPENSSL_PIC;OPENSSL_SYS_WIN32;WIN32_LEAN_AND_MEAN;_WINSOCK_DEPRECATED_NO_WARNINGS;L_ENDIAN;_CRT_SECURE_NO_DEPRECATE;ENGINESDIR="C:/Program Files (x86)/OpenSSL/lib/engines-1_1";OPENSSLDIR="C:/Program Files (x86)/Common Files/SSL";compiler_flags="compiler_flags";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;OPENSSL_USE_APPLINK;DSO_WIN32;OPENSSL_THREADS;OPENSSL_NO_STATIC_ENGINE;OPENSSL_PIC;OPENSSL_SYS_WIN32;WIN32_LEAN_AND_MEAN;_WINSOCK_DEPRECATED_NO_WARNINGS;L_ENDIAN;_CRT_SECURE_NO_DEPRECATE;ENGINESDIR="C:/Program Files (x86)/OpenSSL/lib/engines-1_1";OPENSSLDIR="C:/Program Files (x86)/Common Files/SSL";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)../include;$(ProjectDir)../..;$(ProjectDir)../../include;$(ProjectDir)../../crypto/include;$(ProjectDir)../../crypto/modes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -141,7 +141,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;OPENSSL_USE_APPLINK;DSO_WIN32;OPENSSL_THREADS;OPENSSL_NO_STATIC_ENGINE;OPENSSL_PIC;OPENSSL_SYS_WIN32;WIN32_LEAN_AND_MEAN;_WINSOCK_DEPRECATED_NO_WARNINGS;L_ENDIAN;_CRT_SECURE_NO_DEPRECATE;ENGINESDIR="C:/Program Files (x86)/OpenSSL/lib/engines-1_1";OPENSSLDIR="C:/Program Files (x86)/Common Files/SSL";compiler_flags="compiler_flags";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;OPENSSL_USE_APPLINK;DSO_WIN32;OPENSSL_THREADS;OPENSSL_NO_STATIC_ENGINE;OPENSSL_PIC;OPENSSL_SYS_WIN32;WIN32_LEAN_AND_MEAN;_WINSOCK_DEPRECATED_NO_WARNINGS;L_ENDIAN;_CRT_SECURE_NO_DEPRECATE;ENGINESDIR="C:/Program Files (x86)/OpenSSL/lib/engines-1_1";OPENSSLDIR="C:/Program Files (x86)/Common Files/SSL";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)../include;$(ProjectDir)../..;$(ProjectDir)../../include;$(ProjectDir)../../crypto/include;$(ProjectDir)../../crypto/modes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -157,10 +157,10 @@
     <None Include="..\..\crypto\bn\asm\bn-c64xplus.asm" />
     <CustomBuild Include="ghash-x86_64.asm">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)/nasm.exe -f win64 -DNEAR -Ox -g  %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)nasm.exe -f win64 -DNEAR -Ox -g  %(FullPath)</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compiling %(FullPath)</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compiling %(FullPath)</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)/nasm.exe -f win64 -DNEAR -Ox -g  %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)nasm.exe -f win64 -DNEAR -Ox -g  %(FullPath)</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)</Outputs>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -170,8 +170,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)/nasm.exe -f win32               %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)/nasm.exe -f win32               %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)nasm.exe -f win32               %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)nasm.exe -f win32               %(FullPath)</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compiling %(FullPath)</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)</Outputs>
@@ -182,18 +182,18 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)/nasm.exe -f win64 -DNEAR -Ox -g %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)nasm.exe -f win64 -DNEAR -Ox -g %(FullPath)</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)/nasm.exe -f win64 -DNEAR -Ox -g %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)nasm.exe -f win64 -DNEAR -Ox -g %(FullPath)</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)</Outputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compiling %(FullPath)</Message>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compiling %(FullPath)</Message>
     </CustomBuild>
     <CustomBuild Include="x86_64cpuid.asm">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)/nasm.exe -f win64 -DNEAR -Ox -g %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)nasm.exe -f win64 -DNEAR -Ox -g %(FullPath)</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compiling %(FullPath)</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)/nasm.exe -f win64 -DNEAR -Ox -g %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)nasm.exe -f win64 -DNEAR -Ox -g %(FullPath)</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compiling %(FullPath)</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)</Outputs>
@@ -204,12 +204,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)/nasm.exe -f win32               %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)nasm.exe -f win32               %(FullPath)</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compiling %(FullPath)</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)</Outputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compiling %(FullPath)</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)/nasm.exe -f win32               %(FullPath)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)nasm.exe -f win32               %(FullPath)</Command>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
