@@ -1,7 +1,7 @@
 /*
- * Copyright 1999-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1999-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -28,7 +28,7 @@ struct v3_ext_ctx;
 typedef void *(*X509V3_EXT_NEW)(void);
 typedef void (*X509V3_EXT_FREE) (void *);
 typedef void *(*X509V3_EXT_D2I)(void *, const unsigned char **, long);
-typedef int (*X509V3_EXT_I2D) (void *, unsigned char **);
+typedef int (*X509V3_EXT_I2D) (const void *, unsigned char **);
 typedef STACK_OF(CONF_VALUE) *
     (*X509V3_EXT_I2V) (const struct v3_ext_method *method, void *ext,
                        STACK_OF(CONF_VALUE) *extlist);
@@ -467,7 +467,7 @@ DECLARE_ASN1_FUNCTIONS(AUTHORITY_KEYID)
 DECLARE_ASN1_FUNCTIONS(PKEY_USAGE_PERIOD)
 
 DECLARE_ASN1_FUNCTIONS(GENERAL_NAME)
-GENERAL_NAME *GENERAL_NAME_dup(GENERAL_NAME *a);
+DECLARE_ASN1_DUP_FUNCTION(GENERAL_NAME)
 int GENERAL_NAME_cmp(GENERAL_NAME *a, GENERAL_NAME *b);
 
 ASN1_BIT_STRING *v2i_ASN1_BIT_STRING(X509V3_EXT_METHOD *method,
@@ -629,7 +629,7 @@ X509_EXTENSION *X509V3_EXT_i2d(int ext_nid, int crit, void *ext_struc);
 int X509V3_add1_i2d(STACK_OF(X509_EXTENSION) **x, int nid, void *value,
                     int crit, unsigned long flags);
 
-#if OPENSSL_API_COMPAT < 0x10100000L
+#if !OPENSSL_API_1_1_0
 /* The new declarations are in crypto.h, but the old ones were here. */
 # define hex_to_string OPENSSL_buf2hexstr
 # define string_to_hex OPENSSL_hexstr2buf
@@ -660,6 +660,7 @@ uint32_t X509_get_extension_flags(X509 *x);
 uint32_t X509_get_key_usage(X509 *x);
 uint32_t X509_get_extended_key_usage(X509 *x);
 const ASN1_OCTET_STRING *X509_get0_subject_key_id(X509 *x);
+const ASN1_OCTET_STRING *X509_get0_authority_key_id(X509 *x);
 
 int X509_PURPOSE_get_count(void);
 X509_PURPOSE *X509_PURPOSE_get0(int idx);
@@ -862,6 +863,71 @@ int X509v3_addr_validate_resource_set(STACK_OF(X509) *chain,
                                       IPAddrBlocks *ext, int allow_inheritance);
 
 #endif                         /* OPENSSL_NO_RFC3779 */
+
+DEFINE_STACK_OF(ASN1_STRING)
+
+/*
+ * Admission Syntax
+ */
+typedef struct NamingAuthority_st NAMING_AUTHORITY;
+typedef struct ProfessionInfo_st PROFESSION_INFO;
+typedef struct Admissions_st ADMISSIONS;
+typedef struct AdmissionSyntax_st ADMISSION_SYNTAX;
+DECLARE_ASN1_FUNCTIONS(NAMING_AUTHORITY)
+DECLARE_ASN1_FUNCTIONS(PROFESSION_INFO)
+DECLARE_ASN1_FUNCTIONS(ADMISSIONS)
+DECLARE_ASN1_FUNCTIONS(ADMISSION_SYNTAX)
+DEFINE_STACK_OF(ADMISSIONS)
+DEFINE_STACK_OF(PROFESSION_INFO)
+typedef STACK_OF(PROFESSION_INFO) PROFESSION_INFOS;
+
+const ASN1_OBJECT *NAMING_AUTHORITY_get0_authorityId(
+    const NAMING_AUTHORITY *n);
+const ASN1_IA5STRING *NAMING_AUTHORITY_get0_authorityURL(
+    const NAMING_AUTHORITY *n);
+const ASN1_STRING *NAMING_AUTHORITY_get0_authorityText(
+    const NAMING_AUTHORITY *n);
+void NAMING_AUTHORITY_set0_authorityId(NAMING_AUTHORITY *n,
+    ASN1_OBJECT* namingAuthorityId);
+void NAMING_AUTHORITY_set0_authorityURL(NAMING_AUTHORITY *n,
+    ASN1_IA5STRING* namingAuthorityUrl);
+void NAMING_AUTHORITY_set0_authorityText(NAMING_AUTHORITY *n,
+    ASN1_STRING* namingAuthorityText);
+
+const GENERAL_NAME *ADMISSION_SYNTAX_get0_admissionAuthority(
+    const ADMISSION_SYNTAX *as);
+void ADMISSION_SYNTAX_set0_admissionAuthority(
+    ADMISSION_SYNTAX *as, GENERAL_NAME *aa);
+const STACK_OF(ADMISSIONS) *ADMISSION_SYNTAX_get0_contentsOfAdmissions(
+    const ADMISSION_SYNTAX *as);
+void ADMISSION_SYNTAX_set0_contentsOfAdmissions(
+    ADMISSION_SYNTAX *as, STACK_OF(ADMISSIONS) *a);
+const GENERAL_NAME *ADMISSIONS_get0_admissionAuthority(const ADMISSIONS *a);
+void ADMISSIONS_set0_admissionAuthority(ADMISSIONS *a, GENERAL_NAME *aa);
+const NAMING_AUTHORITY *ADMISSIONS_get0_namingAuthority(const ADMISSIONS *a);
+void ADMISSIONS_set0_namingAuthority(ADMISSIONS *a, NAMING_AUTHORITY *na);
+const PROFESSION_INFOS *ADMISSIONS_get0_professionInfos(const ADMISSIONS *a);
+void ADMISSIONS_set0_professionInfos(ADMISSIONS *a, PROFESSION_INFOS *pi);
+const ASN1_OCTET_STRING *PROFESSION_INFO_get0_addProfessionInfo(
+    const PROFESSION_INFO *pi);
+void PROFESSION_INFO_set0_addProfessionInfo(
+    PROFESSION_INFO *pi, ASN1_OCTET_STRING *aos);
+const NAMING_AUTHORITY *PROFESSION_INFO_get0_namingAuthority(
+    const PROFESSION_INFO *pi);
+void PROFESSION_INFO_set0_namingAuthority(
+    PROFESSION_INFO *pi, NAMING_AUTHORITY *na);
+const STACK_OF(ASN1_STRING) *PROFESSION_INFO_get0_professionItems(
+    const PROFESSION_INFO *pi);
+void PROFESSION_INFO_set0_professionItems(
+    PROFESSION_INFO *pi, STACK_OF(ASN1_STRING) *as);
+const STACK_OF(ASN1_OBJECT) *PROFESSION_INFO_get0_professionOIDs(
+    const PROFESSION_INFO *pi);
+void PROFESSION_INFO_set0_professionOIDs(
+    PROFESSION_INFO *pi, STACK_OF(ASN1_OBJECT) *po);
+const ASN1_PRINTABLESTRING *PROFESSION_INFO_get0_registrationNumber(
+    const PROFESSION_INFO *pi);
+void PROFESSION_INFO_set0_registrationNumber(
+    PROFESSION_INFO *pi, ASN1_PRINTABLESTRING *rn);
 
 # ifdef  __cplusplus
 }

@@ -1,7 +1,7 @@
 /*
  * Copyright 1995-2017 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -34,7 +34,7 @@ void ERR_print_errors_cb(int (*cb) (const char *str, size_t len, void *u),
     tid.tid = CRYPTO_THREAD_get_current_id();
 
     while ((l = ERR_get_error_line_data(&file, &line, &data, &flags)) != 0) {
-        ERR_error_string_n(l, buf, sizeof buf);
+        ERR_error_string_n(l, buf, sizeof(buf));
         BIO_snprintf(buf2, sizeof(buf2), "%lu:%s:%s:%d:%s\n", tid.ltid, buf,
                      file, line, (flags & ERR_TXT_STRING) ? data : "");
         if (cb(buf2, strlen(buf2), u) <= 0)

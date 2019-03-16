@@ -1,7 +1,7 @@
 /*
- * Copyright 2015-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2015-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -223,6 +223,10 @@ struct ocsp_service_locator_st {
 #  define OCSP_BASICRESP_sign(o,pkey,md,d) \
         ASN1_item_sign(ASN1_ITEM_rptr(OCSP_RESPDATA),&(o)->signatureAlgorithm,\
                 NULL,(o)->signature,&(o)->tbsResponseData,pkey,md)
+
+#  define OCSP_BASICRESP_sign_ctx(o,ctx,d) \
+        ASN1_item_sign_ctx(ASN1_ITEM_rptr(OCSP_RESPDATA),&(o)->signatureAlgorithm,\
+                NULL,(o)->signature,&(o)->tbsResponseData,ctx)
 
 #  define OCSP_REQUEST_verify(a,r) ASN1_item_verify(ASN1_ITEM_rptr(OCSP_REQINFO),\
         &(a)->optionalSignature->signatureAlgorithm,\

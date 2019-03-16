@@ -1,7 +1,7 @@
 /*
  * Copyright 1998-2016 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -77,7 +77,7 @@ char *DES_crypt(const char *buf, const char *salt)
 
     /* Convert password to ASCII. */
     OPENSSL_strlcpy(e_buf, buf, sizeof(e_buf));
-    ebcdic2ascii(e_buf, e_buf, sizeof e_buf);
+    ebcdic2ascii(e_buf, e_buf, sizeof(e_buf));
 
     /* Encrypt it (from/to ASCII); if it worked, convert back. */
     ret = DES_fcrypt(e_buf, e_salt, buff);

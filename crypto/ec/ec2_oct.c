@@ -1,8 +1,8 @@
 /*
- * Copyright 2011-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2011-2018 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -94,7 +94,7 @@ int ec_GF2m_simple_set_compressed_coordinates(const EC_GROUP *group,
         }
     }
 
-    if (!EC_POINT_set_affine_coordinates_GF2m(group, point, x, y, ctx))
+    if (!EC_POINT_set_affine_coordinates(group, point, x, y, ctx))
         goto err;
 
     ret = 1;
@@ -166,7 +166,7 @@ size_t ec_GF2m_simple_point2oct(const EC_GROUP *group, const EC_POINT *point,
         if (yxi == NULL)
             goto err;
 
-        if (!EC_POINT_get_affine_coordinates_GF2m(group, point, x, y, ctx))
+        if (!EC_POINT_get_affine_coordinates(group, point, x, y, ctx))
             goto err;
 
         buf[0] = form;
@@ -301,8 +301,7 @@ int ec_GF2m_simple_oct2point(const EC_GROUP *group, EC_POINT *point,
     }
 
     if (form == POINT_CONVERSION_COMPRESSED) {
-        if (!EC_POINT_set_compressed_coordinates_GF2m
-            (group, point, x, y_bit, ctx))
+        if (!EC_POINT_set_compressed_coordinates(group, point, x, y_bit, ctx))
             goto err;
     } else {
         if (!BN_bin2bn(buf + 1 + field_len, field_len, y))
@@ -321,10 +320,10 @@ int ec_GF2m_simple_oct2point(const EC_GROUP *group, EC_POINT *point,
         }
 
         /*
-         * EC_POINT_set_affine_coordinates_GF2m is responsible for checking that
+         * EC_POINT_set_affine_coordinates is responsible for checking that
          * the point is on the curve.
          */
-        if (!EC_POINT_set_affine_coordinates_GF2m(group, point, x, y, ctx))
+        if (!EC_POINT_set_affine_coordinates(group, point, x, y, ctx))
             goto err;
     }
 

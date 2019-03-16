@@ -1,13 +1,20 @@
 /*
- * Copyright 2015-2017 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2015-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
  */
 
+#include <openssl/evp.h>
 #include "internal/refcount.h"
+
+/*
+ * Don't free up md_ctx->pctx in EVP_MD_CTX_reset, use the reserved flag
+ * values in evp.h
+ */
+#define EVP_MD_CTX_FLAG_KEEP_PKEY_CTX   0x0400
 
 struct evp_pkey_ctx_st {
     /* Method associated with this operation */
@@ -37,7 +44,7 @@ struct evp_pkey_method_st {
     int pkey_id;
     int flags;
     int (*init) (EVP_PKEY_CTX *ctx);
-    int (*copy) (EVP_PKEY_CTX *dst, EVP_PKEY_CTX *src);
+    int (*copy) (EVP_PKEY_CTX *dst, const EVP_PKEY_CTX *src);
     void (*cleanup) (EVP_PKEY_CTX *ctx);
     int (*paramgen_init) (EVP_PKEY_CTX *ctx);
     int (*paramgen) (EVP_PKEY_CTX *ctx, EVP_PKEY *pkey);
@@ -78,6 +85,8 @@ struct evp_pkey_method_st {
     int (*check) (EVP_PKEY *pkey);
     int (*public_check) (EVP_PKEY *pkey);
     int (*param_check) (EVP_PKEY *pkey);
+
+    int (*digest_custom) (EVP_PKEY_CTX *ctx, EVP_MD_CTX *mctx);
 } /* EVP_PKEY_METHOD */ ;
 
 DEFINE_STACK_OF_CONST(EVP_PKEY_METHOD)
@@ -89,8 +98,11 @@ extern const EVP_PKEY_METHOD dh_pkey_meth;
 extern const EVP_PKEY_METHOD dhx_pkey_meth;
 extern const EVP_PKEY_METHOD dsa_pkey_meth;
 extern const EVP_PKEY_METHOD ec_pkey_meth;
+extern const EVP_PKEY_METHOD sm2_pkey_meth;
 extern const EVP_PKEY_METHOD ecx25519_pkey_meth;
+extern const EVP_PKEY_METHOD ecx448_pkey_meth;
 extern const EVP_PKEY_METHOD ed25519_pkey_meth;
+extern const EVP_PKEY_METHOD ed448_pkey_meth;
 extern const EVP_PKEY_METHOD hmac_pkey_meth;
 extern const EVP_PKEY_METHOD rsa_pkey_meth;
 extern const EVP_PKEY_METHOD rsa_pss_pkey_meth;
@@ -99,6 +111,64 @@ extern const EVP_PKEY_METHOD tls1_prf_pkey_meth;
 extern const EVP_PKEY_METHOD hkdf_pkey_meth;
 extern const EVP_PKEY_METHOD poly1305_pkey_meth;
 extern const EVP_PKEY_METHOD siphash_pkey_meth;
+
+/* struct evp_mac_impl_st is defined by the implementation */
+typedef struct evp_mac_impl_st EVP_MAC_IMPL;
+struct evp_mac_st {
+    int type;
+    EVP_MAC_IMPL *(*new) (void);
+    int (*copy) (EVP_MAC_IMPL *macdst, EVP_MAC_IMPL *macsrc);
+    void (*free) (EVP_MAC_IMPL *macctx);
+    size_t (*size) (EVP_MAC_IMPL *macctx);
+    int (*init) (EVP_MAC_IMPL *macctx);
+    int (*update) (EVP_MAC_IMPL *macctx, const unsigned char *data,
+                   size_t datalen);
+    int (*final) (EVP_MAC_IMPL *macctx, unsigned char *out);
+    int (*ctrl) (EVP_MAC_IMPL *macctx, int cmd, va_list args);
+    int (*ctrl_str) (EVP_MAC_IMPL *macctx, const char *type, const char *value);
+};
+
+extern const EVP_MAC blake2b_mac_meth;
+extern const EVP_MAC blake2s_mac_meth;
+extern const EVP_MAC cmac_meth;
+extern const EVP_MAC gmac_meth;
+extern const EVP_MAC hmac_meth;
+extern const EVP_MAC kmac128_meth;
+extern const EVP_MAC kmac256_meth;
+extern const EVP_MAC siphash_meth;
+extern const EVP_MAC poly1305_meth;
+
+/* Internal keccak algorithms used for KMAC */
+const EVP_MD *evp_keccak_kmac128(void);
+const EVP_MD *evp_keccak_kmac256(void);
+
+/*
+ * This function is internal for now, but can be made external when needed.
+ * The documentation would read:
+ *
+ * EVP_add_mac() adds the MAC implementation C<mac> to the internal
+ * object database.
+ */
+int EVP_add_mac(const EVP_MAC *mac);
+
+/* struct evp_kdf_impl_st is defined by the implementation */
+typedef struct evp_kdf_impl_st EVP_KDF_IMPL;
+typedef struct {
+    int type;
+    EVP_KDF_IMPL *(*new) (void);
+    void (*free) (EVP_KDF_IMPL *impl);
+    void (*reset) (EVP_KDF_IMPL *impl);
+    int (*ctrl) (EVP_KDF_IMPL *impl, int cmd, va_list args);
+    int (*ctrl_str) (EVP_KDF_IMPL *impl, const char *type, const char *value);
+    size_t (*size) (EVP_KDF_IMPL *impl);
+    int (*derive) (EVP_KDF_IMPL *impl, unsigned char *key, size_t keylen);
+} EVP_KDF_METHOD;
+
+extern const EVP_KDF_METHOD pbkdf2_kdf_meth;
+extern const EVP_KDF_METHOD scrypt_kdf_meth;
+extern const EVP_KDF_METHOD tls1_prf_kdf_meth;
+extern const EVP_KDF_METHOD hkdf_kdf_meth;
+extern const EVP_KDF_METHOD sshkdf_kdf_meth;
 
 struct evp_md_st {
     int type;
@@ -214,7 +284,7 @@ static int cname##_cfb##cbits##_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out, 
         cprefix##_cfb##cbits##_encrypt(in, out, (long) \
             ((cbits == 1) \
                 && !EVP_CIPHER_CTX_test_flags(ctx, EVP_CIPH_FLAG_LENGTH_BITS) \
-                ? inl*8 : inl), \
+                ? chunk*8 : chunk), \
             &EVP_C_DATA(kstruct, ctx)->ksched, EVP_CIPHER_CTX_iv_noconst(ctx),\
             &num, EVP_CIPHER_CTX_encrypting(ctx));\
         EVP_CIPHER_CTX_set_num(ctx, num);\
@@ -361,6 +431,21 @@ const EVP_CIPHER *EVP_##cname##_ecb(void) { return &cname##_ecb; }
                              cipher##_init_key, NULL, NULL, NULL, NULL)
 
 
+# ifndef OPENSSL_NO_EC
+
+#define X25519_KEYLEN        32
+#define X448_KEYLEN          56
+#define ED448_KEYLEN         57
+
+#define MAX_KEYLEN  ED448_KEYLEN
+
+typedef struct {
+    unsigned char pubkey[MAX_KEYLEN];
+    unsigned char *privkey;
+} ECX_KEY;
+
+#endif
+
 /*
  * Type needs to be a bit field Sub-type needs to be for variations on the
  * method, as in, can it do arbitrary encryption....
@@ -385,6 +470,7 @@ struct evp_pkey_st {
 # endif
 # ifndef OPENSSL_NO_EC
         struct ec_key_st *ec;   /* ECC */
+        ECX_KEY *ecx;           /* X25519, X448, Ed25519, Ed448 */
 # endif
     } pkey;
     int save_parameters;
@@ -395,6 +481,7 @@ struct evp_pkey_st {
 
 void openssl_add_all_ciphers_int(void);
 void openssl_add_all_digests_int(void);
+void openssl_add_all_macs_int(void);
 void evp_cleanup_int(void);
 void evp_app_cleanup_int(void);
 
@@ -404,3 +491,11 @@ void evp_app_cleanup_int(void);
 #ifndef TLS1_1_VERSION
 # define TLS1_1_VERSION   0x0302
 #endif
+
+void evp_encode_ctx_set_flags(EVP_ENCODE_CTX *ctx, unsigned int flags);
+
+/* EVP_ENCODE_CTX flags */
+/* Don't generate new lines when encoding */
+#define EVP_ENCODE_CTX_NO_NEWLINES          1
+/* Use the SRP base64 alphabet instead of the standard one */
+#define EVP_ENCODE_CTX_USE_SRP_ALPHABET     2

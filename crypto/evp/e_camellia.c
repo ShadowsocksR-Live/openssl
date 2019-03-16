@@ -1,7 +1,7 @@
 /*
- * Copyright 2006-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2006-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -325,8 +325,10 @@ static int camellia_cfb1_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
         int num = EVP_CIPHER_CTX_num(ctx);
         CRYPTO_cfb128_1_encrypt(in, out, MAXBITCHUNK * 8, &dat->ks,
                                 EVP_CIPHER_CTX_iv_noconst(ctx), &num, EVP_CIPHER_CTX_encrypting(ctx), dat->block);
-        len -= MAXBITCHUNK;
         EVP_CIPHER_CTX_set_num(ctx, num);
+        len -= MAXBITCHUNK;
+        out += MAXBITCHUNK;
+        in  += MAXBITCHUNK;
     }
     if (len) {
         int num = EVP_CIPHER_CTX_num(ctx);

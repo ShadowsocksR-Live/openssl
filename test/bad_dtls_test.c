@@ -1,7 +1,7 @@
 /*
  * Copyright 2016-2017 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -19,7 +19,7 @@
  * Note that unlike other SSL tests, we don't test against our own SSL
  * server method. Firstly because we don't have one; we *only* support
  * DTLS1_BAD_VER as a client. And secondly because even if that were
- * fixed up it's the wrong thing to test against — because if changes
+ * fixed up it's the wrong thing to test against - because if changes
  * are made in generic DTLS code which don't take DTLS1_BAD_VER into
  * account, there's plenty of scope for making those changes such that
  * they break *both* the client and the server in the same way.

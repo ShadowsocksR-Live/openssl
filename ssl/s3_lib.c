@@ -1,9 +1,9 @@
 /*
- * Copyright 1995-2017 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2018 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  * Copyright 2005 Nokia. All rights reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -16,8 +16,10 @@
 #include <openssl/md5.h>
 #include <openssl/dh.h>
 #include <openssl/rand.h>
+#include <openssl/trace.h>
 #include "internal/cryptlib.h"
 
+#define TLS13_NUM_CIPHERS       OSSL_NELEM(tls13_ciphers)
 #define SSL3_NUM_CIPHERS        OSSL_NELEM(ssl3_ciphers)
 #define SSL3_NUM_SCSVS          OSSL_NELEM(ssl3_scsvs)
 
@@ -27,6 +29,90 @@ const unsigned char tls11downgrade[] = {
 };
 const unsigned char tls12downgrade[] = {
     0x44, 0x4f, 0x57, 0x4e, 0x47, 0x52, 0x44, 0x01
+};
+
+/* The list of available TLSv1.3 ciphers */
+static SSL_CIPHER tls13_ciphers[] = {
+    {
+        1,
+        TLS1_3_RFC_AES_128_GCM_SHA256,
+        TLS1_3_RFC_AES_128_GCM_SHA256,
+        TLS1_3_CK_AES_128_GCM_SHA256,
+        SSL_kANY,
+        SSL_aANY,
+        SSL_AES128GCM,
+        SSL_AEAD,
+        TLS1_3_VERSION, TLS1_3_VERSION,
+        0, 0,
+        SSL_HIGH,
+        SSL_HANDSHAKE_MAC_SHA256,
+        128,
+        128,
+    }, {
+        1,
+        TLS1_3_RFC_AES_256_GCM_SHA384,
+        TLS1_3_RFC_AES_256_GCM_SHA384,
+        TLS1_3_CK_AES_256_GCM_SHA384,
+        SSL_kANY,
+        SSL_aANY,
+        SSL_AES256GCM,
+        SSL_AEAD,
+        TLS1_3_VERSION, TLS1_3_VERSION,
+        0, 0,
+        SSL_HIGH,
+        SSL_HANDSHAKE_MAC_SHA384,
+        256,
+        256,
+    },
+#if !defined(OPENSSL_NO_CHACHA) && !defined(OPENSSL_NO_POLY1305)
+    {
+        1,
+        TLS1_3_RFC_CHACHA20_POLY1305_SHA256,
+        TLS1_3_RFC_CHACHA20_POLY1305_SHA256,
+        TLS1_3_CK_CHACHA20_POLY1305_SHA256,
+        SSL_kANY,
+        SSL_aANY,
+        SSL_CHACHA20POLY1305,
+        SSL_AEAD,
+        TLS1_3_VERSION, TLS1_3_VERSION,
+        0, 0,
+        SSL_HIGH,
+        SSL_HANDSHAKE_MAC_SHA256,
+        256,
+        256,
+    },
+#endif
+    {
+        1,
+        TLS1_3_RFC_AES_128_CCM_SHA256,
+        TLS1_3_RFC_AES_128_CCM_SHA256,
+        TLS1_3_CK_AES_128_CCM_SHA256,
+        SSL_kANY,
+        SSL_aANY,
+        SSL_AES128CCM,
+        SSL_AEAD,
+        TLS1_3_VERSION, TLS1_3_VERSION,
+        0, 0,
+        SSL_NOT_DEFAULT | SSL_HIGH,
+        SSL_HANDSHAKE_MAC_SHA256,
+        128,
+        128,
+    }, {
+        1,
+        TLS1_3_RFC_AES_128_CCM_8_SHA256,
+        TLS1_3_RFC_AES_128_CCM_8_SHA256,
+        TLS1_3_CK_AES_128_CCM_8_SHA256,
+        SSL_kANY,
+        SSL_aANY,
+        SSL_AES128CCM8,
+        SSL_AEAD,
+        TLS1_3_VERSION, TLS1_3_VERSION,
+        0, 0,
+        SSL_NOT_DEFAULT | SSL_HIGH,
+        SSL_HANDSHAKE_MAC_SHA256,
+        128,
+        128,
+    }
 };
 
 /*
@@ -860,90 +946,6 @@ static SSL_CIPHER ssl3_ciphers[] = {
      },
     {
      1,
-     TLS1_3_TXT_AES_128_GCM_SHA256,
-     TLS1_3_RFC_AES_128_GCM_SHA256,
-     TLS1_3_CK_AES_128_GCM_SHA256,
-     0, 0,
-     SSL_AES128GCM,
-     SSL_AEAD,
-     TLS1_3_VERSION, TLS1_3_VERSION,
-     SSL_kANY,
-     SSL_aANY,
-     SSL_HIGH,
-     SSL_HANDSHAKE_MAC_SHA256,
-     128,
-     128,
-     },
-    {
-     1,
-     TLS1_3_TXT_AES_256_GCM_SHA384,
-     TLS1_3_RFC_AES_256_GCM_SHA384,
-     TLS1_3_CK_AES_256_GCM_SHA384,
-     SSL_kANY,
-     SSL_aANY,
-     SSL_AES256GCM,
-     SSL_AEAD,
-     TLS1_3_VERSION, TLS1_3_VERSION,
-     0, 0,
-     SSL_HIGH,
-     SSL_HANDSHAKE_MAC_SHA384,
-     256,
-     256,
-     },
-#if !defined(OPENSSL_NO_CHACHA) && !defined(OPENSSL_NO_POLY1305)
-    {
-     1,
-     TLS1_3_TXT_CHACHA20_POLY1305_SHA256,
-     TLS1_3_RFC_CHACHA20_POLY1305_SHA256,
-     TLS1_3_CK_CHACHA20_POLY1305_SHA256,
-     SSL_kANY,
-     SSL_aANY,
-     SSL_CHACHA20POLY1305,
-     SSL_AEAD,
-     TLS1_3_VERSION, TLS1_3_VERSION,
-     0, 0,
-     SSL_HIGH,
-     SSL_HANDSHAKE_MAC_SHA256,
-     256,
-     256,
-     },
-#endif
-    {
-     1,
-     TLS1_3_TXT_AES_128_CCM_SHA256,
-     TLS1_3_RFC_AES_128_CCM_SHA256,
-     TLS1_3_CK_AES_128_CCM_SHA256,
-     SSL_kANY,
-     SSL_aANY,
-     SSL_AES128CCM,
-     SSL_AEAD,
-     TLS1_3_VERSION, TLS1_3_VERSION,
-     0, 0,
-     SSL_NOT_DEFAULT | SSL_HIGH,
-     SSL_HANDSHAKE_MAC_SHA256,
-     128,
-     128,
-     },
-    {
-     1,
-     TLS1_3_TXT_AES_128_CCM_8_SHA256,
-     TLS1_3_RFC_AES_128_CCM_8_SHA256,
-     TLS1_3_CK_AES_128_CCM_8_SHA256,
-     SSL_kANY,
-     SSL_aANY,
-     SSL_AES128CCM8,
-     SSL_AEAD,
-     TLS1_3_VERSION, TLS1_3_VERSION,
-     0, 0,
-     SSL_NOT_DEFAULT | SSL_HIGH,
-     SSL_HANDSHAKE_MAC_SHA256,
-     128,
-     128,
-     },
-
-#ifndef OPENSSL_NO_EC
-    {
-     1,
      TLS1_TXT_ECDHE_ECDSA_WITH_NULL_SHA,
      TLS1_RFC_ECDHE_ECDSA_WITH_NULL_SHA,
      TLS1_CK_ECDHE_ECDSA_WITH_NULL_SHA,
@@ -1268,9 +1270,6 @@ static SSL_CIPHER ssl3_ciphers[] = {
      256,
      256,
      },
-#endif                          /* OPENSSL_NO_EC */
-
-#ifndef OPENSSL_NO_PSK
     {
      1,
      TLS1_TXT_PSK_WITH_NULL_SHA,
@@ -1757,7 +1756,6 @@ static SSL_CIPHER ssl3_ciphers[] = {
      0,
      0,
      },
-# ifndef OPENSSL_NO_EC
 #  ifndef OPENSSL_NO_WEAK_SSL_CIPHERS
     {
      1,
@@ -1888,10 +1886,7 @@ static SSL_CIPHER ssl3_ciphers[] = {
      0,
      0,
      },
-# endif                         /* OPENSSL_NO_EC */
-#endif                          /* OPENSSL_NO_PSK */
 
-#ifndef OPENSSL_NO_SRP
 # ifndef OPENSSL_NO_WEAK_SSL_CIPHERS
     {
      1,
@@ -2038,10 +2033,8 @@ static SSL_CIPHER ssl3_ciphers[] = {
      256,
      256,
      },
-#endif                          /* OPENSSL_NO_SRP */
 
 #if !defined(OPENSSL_NO_CHACHA) && !defined(OPENSSL_NO_POLY1305)
-# ifndef OPENSSL_NO_RSA
     {
      1,
      TLS1_TXT_DHE_RSA_WITH_CHACHA20_POLY1305,
@@ -2058,9 +2051,6 @@ static SSL_CIPHER ssl3_ciphers[] = {
      256,
      256,
      },
-# endif                         /* OPENSSL_NO_RSA */
-
-# ifndef OPENSSL_NO_EC
     {
      1,
      TLS1_TXT_ECDHE_RSA_WITH_CHACHA20_POLY1305,
@@ -2093,9 +2083,6 @@ static SSL_CIPHER ssl3_ciphers[] = {
      256,
      256,
      },
-# endif                         /* OPENSSL_NO_EC */
-
-# ifndef OPENSSL_NO_PSK
     {
      1,
      TLS1_TXT_PSK_WITH_CHACHA20_POLY1305,
@@ -2160,7 +2147,6 @@ static SSL_CIPHER ssl3_ciphers[] = {
      256,
      256,
      },
-# endif                         /* OPENSSL_NO_PSK */
 #endif                          /* !defined(OPENSSL_NO_CHACHA) &&
                                  * !defined(OPENSSL_NO_POLY1305) */
 
@@ -2421,8 +2407,6 @@ static SSL_CIPHER ssl3_ciphers[] = {
      128,
      128,
      },
-
-# ifndef OPENSSL_NO_EC
     {
      1,
      TLS1_TXT_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256,
@@ -2487,9 +2471,6 @@ static SSL_CIPHER ssl3_ciphers[] = {
      256,
      256,
      },
-# endif                         /* OPENSSL_NO_EC */
-
-# ifndef OPENSSL_NO_PSK
     {
      1,
      TLS1_TXT_PSK_WITH_CAMELLIA_128_CBC_SHA256,
@@ -2618,8 +2599,6 @@ static SSL_CIPHER ssl3_ciphers[] = {
      256,
      256,
      },
-# endif                         /* OPENSSL_NO_PSK */
-
 #endif                          /* OPENSSL_NO_CAMELLIA */
 
 #ifndef OPENSSL_NO_GOST
@@ -2824,8 +2803,6 @@ static SSL_CIPHER ssl3_ciphers[] = {
      128,
      128,
      },
-
-# ifndef OPENSSL_NO_EC
     {
      1,
      TLS1_TXT_ECDHE_PSK_WITH_RC4_128_SHA,
@@ -2890,9 +2867,6 @@ static SSL_CIPHER ssl3_ciphers[] = {
      128,
      128,
      },
-# endif                         /* OPENSSL_NO_EC */
-
-# ifndef OPENSSL_NO_PSK
     {
      1,
      TLS1_TXT_PSK_WITH_RC4_128_SHA,
@@ -2941,8 +2915,6 @@ static SSL_CIPHER ssl3_ciphers[] = {
      128,
      128,
      },
-# endif                         /* OPENSSL_NO_PSK */
-
 #endif                          /* OPENSSL_NO_WEAK_SSL_CIPHERS */
 
 #ifndef OPENSSL_NO_ARIA
@@ -3074,7 +3046,6 @@ static SSL_CIPHER ssl3_ciphers[] = {
      256,
      256,
      },
-
     {
      1,
      TLS1_TXT_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256,
@@ -3171,7 +3142,6 @@ static SSL_CIPHER ssl3_ciphers[] = {
      256,
      256,
      },
-
     {
      1,
      TLS1_TXT_RSA_PSK_WITH_ARIA_128_GCM_SHA256,
@@ -3241,9 +3211,25 @@ static int cipher_compare(const void *a, const void *b)
 
 void ssl_sort_cipher_list(void)
 {
-    qsort(ssl3_ciphers, SSL3_NUM_CIPHERS, sizeof ssl3_ciphers[0],
+    qsort(tls13_ciphers, TLS13_NUM_CIPHERS, sizeof(tls13_ciphers[0]),
           cipher_compare);
-    qsort(ssl3_scsvs, SSL3_NUM_SCSVS, sizeof ssl3_scsvs[0], cipher_compare);
+    qsort(ssl3_ciphers, SSL3_NUM_CIPHERS, sizeof(ssl3_ciphers[0]),
+          cipher_compare);
+    qsort(ssl3_scsvs, SSL3_NUM_SCSVS, sizeof(ssl3_scsvs[0]), cipher_compare);
+}
+
+static int ssl_undefined_function_1(SSL *ssl, unsigned char *r, size_t s,
+                                    const char * t, size_t u,
+                                    const unsigned char * v, size_t w, int x)
+{
+    (void)r;
+    (void)s;
+    (void)t;
+    (void)u;
+    (void)v;
+    (void)w;
+    (void)x;
+    return ssl_undefined_function(ssl);
 }
 
 const SSL3_ENC_METHOD SSLv3_enc_data = {
@@ -3256,9 +3242,7 @@ const SSL3_ENC_METHOD SSLv3_enc_data = {
     SSL3_MD_CLIENT_FINISHED_CONST, 4,
     SSL3_MD_SERVER_FINISHED_CONST, 4,
     ssl3_alert_code,
-    (int (*)(SSL *, unsigned char *, size_t, const char *,
-             size_t, const unsigned char *, size_t,
-             int use_context))ssl_undefined_function,
+    ssl_undefined_function_1,
     0,
     ssl3_set_handshake_header,
     tls_close_construct_packet,
@@ -3346,6 +3330,7 @@ void ssl3_free(SSL *s)
     OPENSSL_free(s->s3->tmp.ciphers_raw);
     OPENSSL_clear_free(s->s3->tmp.pms, s->s3->tmp.pmslen);
     OPENSSL_free(s->s3->tmp.peer_sigalgs);
+    OPENSSL_free(s->s3->tmp.peer_cert_sigalgs);
     ssl3_free_digest_list(s);
     OPENSSL_free(s->s3->alpn_selected);
     OPENSSL_free(s->s3->alpn_proposed);
@@ -3365,6 +3350,7 @@ int ssl3_clear(SSL *s)
     OPENSSL_free(s->s3->tmp.ciphers_raw);
     OPENSSL_clear_free(s->s3->tmp.pms, s->s3->tmp.pmslen);
     OPENSSL_free(s->s3->tmp.peer_sigalgs);
+    OPENSSL_free(s->s3->tmp.peer_cert_sigalgs);
 
 #if !defined(OPENSSL_NO_EC) || !defined(OPENSSL_NO_DH)
     EVP_PKEY_free(s->s3->tmp.pkey);
@@ -3429,7 +3415,7 @@ long ssl3_ctrl(SSL *s, int cmd, long larg, void *parg)
             EVP_PKEY *pkdh = NULL;
             if (dh == NULL) {
                 SSLerr(SSL_F_SSL3_CTRL, ERR_R_PASSED_NULL_PARAMETER);
-                return ret;
+                return 0;
             }
             pkdh = ssl_dh_to_pkey(dh);
             if (pkdh == NULL) {
@@ -3440,11 +3426,11 @@ long ssl3_ctrl(SSL *s, int cmd, long larg, void *parg)
                               EVP_PKEY_security_bits(pkdh), 0, pkdh)) {
                 SSLerr(SSL_F_SSL3_CTRL, SSL_R_DH_KEY_TOO_SMALL);
                 EVP_PKEY_free(pkdh);
-                return ret;
+                return 0;
             }
             EVP_PKEY_free(s->cert->dh_tmp);
             s->cert->dh_tmp = pkdh;
-            ret = 1;
+            return 1;
         }
         break;
     case SSL_CTRL_SET_TMP_DH_CB:
@@ -3481,6 +3467,15 @@ long ssl3_ctrl(SSL *s, int cmd, long larg, void *parg)
         break;
 #endif                          /* !OPENSSL_NO_EC */
     case SSL_CTRL_SET_TLSEXT_HOSTNAME:
+        /*
+         * TODO(OpenSSL1.2)
+         * This API is only used for a client to set what SNI it will request
+         * from the server, but we currently allow it to be used on servers
+         * as well, which is a programming error.  Currently we just clear
+         * the field in SSL_do_handshake() for server SSLs, but when we can
+         * make ABI-breaking changes, we may want to make use of this API
+         * an error on server SSLs.
+         */
         if (larg == TLSEXT_NAMETYPE_host_name) {
             size_t len;
 
@@ -3687,9 +3682,15 @@ long ssl3_ctrl(SSL *s, int cmd, long larg, void *parg)
         *(int *)parg = s->s3->tmp.peer_sigalg->hash;
         return 1;
 
-    case SSL_CTRL_GET_SERVER_TMP_KEY:
+    case SSL_CTRL_GET_SIGNATURE_NID:
+        if (s->s3->tmp.sigalg == NULL)
+            return 0;
+        *(int *)parg = s->s3->tmp.sigalg->hash;
+        return 1;
+
+    case SSL_CTRL_GET_PEER_TMP_KEY:
 #if !defined(OPENSSL_NO_DH) || !defined(OPENSSL_NO_EC)
-        if (s->server || s->session == NULL || s->s3->peer_tmp == NULL) {
+        if (s->session == NULL || s->s3->peer_tmp == NULL) {
             return 0;
         } else {
             EVP_PKEY_up_ref(s->s3->peer_tmp);
@@ -3699,6 +3700,20 @@ long ssl3_ctrl(SSL *s, int cmd, long larg, void *parg)
 #else
         return 0;
 #endif
+
+    case SSL_CTRL_GET_TMP_KEY:
+#if !defined(OPENSSL_NO_DH) || !defined(OPENSSL_NO_EC)
+        if (s->session == NULL || s->s3->tmp.pkey == NULL) {
+            return 0;
+        } else {
+            EVP_PKEY_up_ref(s->s3->tmp.pkey);
+            *(EVP_PKEY **)parg = s->s3->tmp.pkey;
+            return 1;
+        }
+#else
+        return 0;
+#endif
+
 #ifndef OPENSSL_NO_EC
     case SSL_CTRL_GET_EC_POINT_FORMATS:
         {
@@ -3767,7 +3782,7 @@ long ssl3_ctx_ctrl(SSL_CTX *ctx, int cmd, long larg, void *parg)
                                   EVP_PKEY_security_bits(pkdh), 0, pkdh)) {
                 SSLerr(SSL_F_SSL3_CTX_CTRL, SSL_R_DH_KEY_TOO_SMALL);
                 EVP_PKEY_free(pkdh);
-                return 1;
+                return 0;
             }
             EVP_PKEY_free(ctx->cert->dh_tmp);
             ctx->cert->dh_tmp = pkdh;
@@ -3813,8 +3828,8 @@ long ssl3_ctx_ctrl(SSL_CTX *ctx, int cmd, long larg, void *parg)
         {
             unsigned char *keys = parg;
             long tick_keylen = (sizeof(ctx->ext.tick_key_name) +
-                                sizeof(ctx->ext.tick_hmac_key) +
-                                sizeof(ctx->ext.tick_aes_key));
+                                sizeof(ctx->ext.secure->tick_hmac_key) +
+                                sizeof(ctx->ext.secure->tick_aes_key));
             if (keys == NULL)
                 return tick_keylen;
             if (larg != tick_keylen) {
@@ -3824,23 +3839,23 @@ long ssl3_ctx_ctrl(SSL_CTX *ctx, int cmd, long larg, void *parg)
             if (cmd == SSL_CTRL_SET_TLSEXT_TICKET_KEYS) {
                 memcpy(ctx->ext.tick_key_name, keys,
                        sizeof(ctx->ext.tick_key_name));
-                memcpy(ctx->ext.tick_hmac_key,
+                memcpy(ctx->ext.secure->tick_hmac_key,
                        keys + sizeof(ctx->ext.tick_key_name),
-                       sizeof(ctx->ext.tick_hmac_key));
-                memcpy(ctx->ext.tick_aes_key,
+                       sizeof(ctx->ext.secure->tick_hmac_key));
+                memcpy(ctx->ext.secure->tick_aes_key,
                        keys + sizeof(ctx->ext.tick_key_name) +
-                       sizeof(ctx->ext.tick_hmac_key),
-                       sizeof(ctx->ext.tick_aes_key));
+                       sizeof(ctx->ext.secure->tick_hmac_key),
+                       sizeof(ctx->ext.secure->tick_aes_key));
             } else {
                 memcpy(keys, ctx->ext.tick_key_name,
                        sizeof(ctx->ext.tick_key_name));
                 memcpy(keys + sizeof(ctx->ext.tick_key_name),
-                       ctx->ext.tick_hmac_key,
-                       sizeof(ctx->ext.tick_hmac_key));
+                       ctx->ext.secure->tick_hmac_key,
+                       sizeof(ctx->ext.secure->tick_hmac_key));
                 memcpy(keys + sizeof(ctx->ext.tick_key_name) +
-                       sizeof(ctx->ext.tick_hmac_key),
-                       ctx->ext.tick_aes_key,
-                       sizeof(ctx->ext.tick_aes_key));
+                       sizeof(ctx->ext.secure->tick_hmac_key),
+                       ctx->ext.secure->tick_aes_key,
+                       sizeof(ctx->ext.secure->tick_aes_key));
             }
             return 1;
         }
@@ -4047,6 +4062,9 @@ const SSL_CIPHER *ssl3_get_cipher_by_id(uint32_t id)
     const SSL_CIPHER *cp;
 
     c.id = id;
+    cp = OBJ_bsearch_ssl_cipher_id(&c, tls13_ciphers, TLS13_NUM_CIPHERS);
+    if (cp != NULL)
+        return cp;
     cp = OBJ_bsearch_ssl_cipher_id(&c, ssl3_ciphers, SSL3_NUM_CIPHERS);
     if (cp != NULL)
         return cp;
@@ -4055,17 +4073,19 @@ const SSL_CIPHER *ssl3_get_cipher_by_id(uint32_t id)
 
 const SSL_CIPHER *ssl3_get_cipher_by_std_name(const char *stdname)
 {
-    SSL_CIPHER *c = NULL;
-    SSL_CIPHER *tbl = ssl3_ciphers;
-    size_t i;
+    SSL_CIPHER *c = NULL, *tbl;
+    SSL_CIPHER *alltabs[] = {tls13_ciphers, ssl3_ciphers};
+    size_t i, j, tblsize[] = {TLS13_NUM_CIPHERS, SSL3_NUM_CIPHERS};
 
     /* this is not efficient, necessary to optimize this? */
-    for (i = 0; i < SSL3_NUM_CIPHERS; i++, tbl++) {
-        if (tbl->stdname == NULL)
-            continue;
-        if (strcmp(stdname, tbl->stdname) == 0) {
-            c = tbl;
-            break;
+    for (j = 0; j < OSSL_NELEM(alltabs); j++) {
+        for (i = 0, tbl = alltabs[j]; i < tblsize[j]; i++, tbl++) {
+            if (tbl->stdname == NULL)
+                continue;
+            if (strcmp(stdname, tbl->stdname) == 0) {
+                c = tbl;
+                break;
+            }
         }
     }
     if (c == NULL) {
@@ -4118,8 +4138,9 @@ const SSL_CIPHER *ssl3_choose_cipher(SSL *s, STACK_OF(SSL_CIPHER) *clnt,
 {
     const SSL_CIPHER *c, *ret = NULL;
     STACK_OF(SSL_CIPHER) *prio, *allow;
-    int i, ii, ok;
+    int i, ii, ok, prefer_sha256 = 0;
     unsigned long alg_k = 0, alg_a = 0, mask_k = 0, mask_a = 0;
+    const EVP_MD *mdsha256 = EVP_sha256();
 #ifndef OPENSSL_NO_CHACHA
     STACK_OF(SSL_CIPHER) *prio_chacha = NULL;
 #endif
@@ -4133,20 +4154,20 @@ const SSL_CIPHER *ssl3_choose_cipher(SSL *s, STACK_OF(SSL_CIPHER) *clnt,
      * pay with the price of sk_SSL_CIPHER_dup().
      */
 
-#ifdef CIPHER_DEBUG
-    fprintf(stderr, "Server has %d from %p:\n", sk_SSL_CIPHER_num(srvr),
-            (void *)srvr);
-    for (i = 0; i < sk_SSL_CIPHER_num(srvr); ++i) {
-        c = sk_SSL_CIPHER_value(srvr, i);
-        fprintf(stderr, "%p:%s\n", (void *)c, c->name);
-    }
-    fprintf(stderr, "Client sent %d from %p:\n", sk_SSL_CIPHER_num(clnt),
-            (void *)clnt);
-    for (i = 0; i < sk_SSL_CIPHER_num(clnt); ++i) {
-        c = sk_SSL_CIPHER_value(clnt, i);
-        fprintf(stderr, "%p:%s\n", (void *)c, c->name);
-    }
-#endif
+    OSSL_TRACE_BEGIN(TLS_CIPHER) {
+        BIO_printf(trc_out, "Server has %d from %p:\n",
+                   sk_SSL_CIPHER_num(srvr), (void *)srvr);
+        for (i = 0; i < sk_SSL_CIPHER_num(srvr); ++i) {
+            c = sk_SSL_CIPHER_value(srvr, i);
+            BIO_printf(trc_out, "%p:%s\n", (void *)c, c->name);
+        }
+        BIO_printf(trc_out, "Client sent %d from %p:\n",
+                   sk_SSL_CIPHER_num(clnt), (void *)clnt);
+        for (i = 0; i < sk_SSL_CIPHER_num(clnt); ++i) {
+            c = sk_SSL_CIPHER_value(clnt, i);
+            BIO_printf(trc_out, "%p:%s\n", (void *)c, c->name);
+        }
+    } OSSL_TRACE_END(TLS_CIPHER);
 
     /* SUITE-B takes precedence over server preference and ChaCha priortiy */
     if (tls1_suiteb(s)) {
@@ -4200,7 +4221,26 @@ const SSL_CIPHER *ssl3_choose_cipher(SSL *s, STACK_OF(SSL_CIPHER) *clnt,
         allow = srvr;
     }
 
-    if (!SSL_IS_TLS13(s)) {
+    if (SSL_IS_TLS13(s)) {
+#ifndef OPENSSL_NO_PSK
+        int j;
+
+        /*
+         * If we allow "old" style PSK callbacks, and we have no certificate (so
+         * we're not going to succeed without a PSK anyway), and we're in
+         * TLSv1.3 then the default hash for a PSK is SHA-256 (as per the
+         * TLSv1.3 spec). Therefore we should prioritise ciphersuites using
+         * that.
+         */
+        if (s->psk_server_callback != NULL) {
+            for (j = 0; j < SSL_PKEY_NUM && !ssl_has_cert(s, j); j++);
+            if (j == SSL_PKEY_NUM) {
+                /* There are no certificates */
+                prefer_sha256 = 1;
+            }
+        }
+#endif
+    } else {
         tls1_set_cert_validity(s);
         ssl_set_masks(s);
     }
@@ -4241,10 +4281,9 @@ const SSL_CIPHER *ssl3_choose_cipher(SSL *s, STACK_OF(SSL_CIPHER) *clnt,
 #endif                          /* OPENSSL_NO_PSK */
 
             ok = (alg_k & mask_k) && (alg_a & mask_a);
-#ifdef CIPHER_DEBUG
-            fprintf(stderr, "%d:[%08lX:%08lX:%08lX:%08lX]%p:%s\n", ok, alg_k,
-                    alg_a, mask_k, mask_a, (void *)c, c->name);
-#endif
+            OSSL_TRACE7(TLS_CIPHER,
+                        "%d:[%08lX:%08lX:%08lX:%08lX]%p:%s\n",
+                        ok, alg_k, alg_a, mask_k, mask_a, (void *)c, c->name);
 
 #ifndef OPENSSL_NO_EC
             /*
@@ -4272,6 +4311,17 @@ const SSL_CIPHER *ssl3_choose_cipher(SSL *s, STACK_OF(SSL_CIPHER) *clnt,
                 continue;
             }
 #endif
+            if (prefer_sha256) {
+                const SSL_CIPHER *tmp = sk_SSL_CIPHER_value(allow, ii);
+
+                if (ssl_md(tmp->algorithm2) == mdsha256) {
+                    ret = tmp;
+                    break;
+                }
+                if (ret == NULL)
+                    ret = tmp;
+                continue;
+            }
             ret = sk_SSL_CIPHER_value(allow, ii);
             break;
         }
@@ -4534,12 +4584,12 @@ int ssl_fill_hello_random(SSL *s, int server, unsigned char *result, size_t len,
         unsigned char *p = result;
 
         l2n(Time, p);
-        ret = ssl_randbytes(s, p, len - 4);
+        ret = RAND_bytes(p, len - 4);
     } else {
-        ret = ssl_randbytes(s, result, len);
+        ret = RAND_bytes(result, len);
     }
-#ifndef OPENSSL_NO_TLS13DOWNGRADE
-    if (ret) {
+
+    if (ret > 0) {
         if (!ossl_assert(sizeof(tls11downgrade) < len)
                 || !ossl_assert(sizeof(tls12downgrade) < len))
              return 0;
@@ -4550,7 +4600,7 @@ int ssl_fill_hello_random(SSL *s, int server, unsigned char *result, size_t len,
             memcpy(result + len - sizeof(tls11downgrade), tls11downgrade,
                    sizeof(tls11downgrade));
     }
-#endif
+
     return ret;
 }
 
@@ -4591,6 +4641,7 @@ int ssl_generate_master_secret(SSL *s, unsigned char *pms, size_t pmslen,
         if (!s->method->ssl3_enc->generate_master_secret(s,
                     s->session->master_key,pskpms, pskpmslen,
                     &s->session->master_key_length)) {
+            OPENSSL_clear_free(pskpms, pskpmslen);
             /* SSLfatal() already called */
             goto err;
         }

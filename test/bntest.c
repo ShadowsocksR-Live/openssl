@@ -1,40 +1,28 @@
 /*
- * Copyright 1995-2017 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2019 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
  */
-#include "../e_os.h"
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 
-#include "internal/nelem.h"
-#include "internal/numbers.h"
 #include <openssl/bn.h>
 #include <openssl/crypto.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
+#include "internal/nelem.h"
+#include "internal/numbers.h"
 #include "testutil.h"
 
-/*
- * In bn_lcl.h, bn_expand() is defined as a static ossl_inline function.
- * This is fine in itself, it will end up as an unused static function in
- * the worst case.  However, it references bn_expand2(), which is a private
- * function in libcrypto and therefore unavailable on some systems.  This
- * may result in a linker error because of unresolved symbols.
- *
- * To avoid this, we define a dummy variant of bn_expand2() here, and to
- * avoid possible clashes with libcrypto, we rename it first, using a macro.
- */
-#define bn_expand2 dummy_bn_expand2
-BIGNUM *bn_expand2(BIGNUM *b, int words);
-BIGNUM *bn_expand2(BIGNUM *b, int words) { return NULL; }
-#include "../crypto/bn/bn_lcl.h"
+#ifdef OPENSSL_SYS_WINDOWS
+# define strcasecmp _stricmp
+#endif
 
 /*
  * Things in boring, not in openssl.  TODO we should add them.
@@ -135,7 +123,7 @@ static int getint(STANZA *s, int *out, const char *attribute)
 
     *out = (int)word;
     st = 1;
-err:
+ err:
     BN_free(ret);
     return st;
 }
@@ -150,7 +138,6 @@ static int equalBN(const char *op, const BIGNUM *expected, const BIGNUM *actual)
     return 0;
 }
 
-
 /*
  * Return a "random" flag for if a BN should be negated.
  */
@@ -162,6 +149,77 @@ static int rand_neg(void)
     return sign[(neg++) % 8];
 }
 
+static int test_swap(void)
+{
+    BIGNUM *a = NULL, *b = NULL, *c = NULL, *d = NULL;
+    int top, cond, st = 0;
+
+    if (!TEST_ptr(a = BN_new())
+            || !TEST_ptr(b = BN_new())
+            || !TEST_ptr(c = BN_new())
+            || !TEST_ptr(d = BN_new()))
+        goto err;
+
+    BN_bntest_rand(a, 1024, 1, 0);
+    BN_bntest_rand(b, 1024, 1, 0);
+    BN_copy(c, a);
+    BN_copy(d, b);
+    top = BN_num_bits(a) / BN_BITS2;
+
+    /* regular swap */
+    BN_swap(a, b);
+    if (!equalBN("swap", a, d)
+            || !equalBN("swap", b, c))
+        goto err;
+
+    /* conditional swap: true */
+    cond = 1;
+    BN_consttime_swap(cond, a, b, top);
+    if (!equalBN("cswap true", a, c)
+            || !equalBN("cswap true", b, d))
+        goto err;
+
+    /* conditional swap: false */
+    cond = 0;
+    BN_consttime_swap(cond, a, b, top);
+    if (!equalBN("cswap false", a, c)
+            || !equalBN("cswap false", b, d))
+        goto err;
+
+    /* same tests but checking flag swap */
+    BN_set_flags(a, BN_FLG_CONSTTIME);
+
+    BN_swap(a, b);
+    if (!equalBN("swap, flags", a, d)
+            || !equalBN("swap, flags", b, c)
+            || !TEST_true(BN_get_flags(b, BN_FLG_CONSTTIME))
+            || !TEST_false(BN_get_flags(a, BN_FLG_CONSTTIME)))
+        goto err;
+
+    cond = 1;
+    BN_consttime_swap(cond, a, b, top);
+    if (!equalBN("cswap true, flags", a, c)
+            || !equalBN("cswap true, flags", b, d)
+            || !TEST_true(BN_get_flags(a, BN_FLG_CONSTTIME))
+            || !TEST_false(BN_get_flags(b, BN_FLG_CONSTTIME)))
+        goto err;
+
+    cond = 0;
+    BN_consttime_swap(cond, a, b, top);
+    if (!equalBN("cswap false, flags", a, c)
+            || !equalBN("cswap false, flags", b, d)
+            || !TEST_true(BN_get_flags(a, BN_FLG_CONSTTIME))
+            || !TEST_false(BN_get_flags(b, BN_FLG_CONSTTIME)))
+        goto err;
+
+    st = 1;
+ err:
+    BN_free(a);
+    BN_free(b);
+    BN_free(c);
+    BN_free(d);
+    return st;
+}
 
 static int test_sub(void)
 {
@@ -182,8 +240,8 @@ static int test_sub(void)
             BN_add_word(b, i);
         } else {
             BN_bntest_rand(b, 400 + i - NUM1, 0, 0);
-            a->neg = rand_neg();
-            b->neg = rand_neg();
+            BN_set_negative(a, rand_neg());
+            BN_set_negative(b, rand_neg());
         }
         BN_sub(c, a, b);
         BN_add(c, c, b);
@@ -192,13 +250,12 @@ static int test_sub(void)
             goto err;
     }
     st = 1;
-err:
+ err:
     BN_free(a);
     BN_free(b);
     BN_free(c);
     return st;
 }
-
 
 static int test_div_recip(void)
 {
@@ -222,8 +279,8 @@ static int test_div_recip(void)
             BN_add_word(a, i);
         } else
             BN_bntest_rand(b, 50 + 3 * (i - NUM1), 0, 0);
-        a->neg = rand_neg();
-        b->neg = rand_neg();
+        BN_set_negative(a, rand_neg());
+        BN_set_negative(b, rand_neg());
         BN_RECP_CTX_set(recp, b, ctx);
         BN_div_recp(d, c, a, recp, ctx);
         BN_mul(e, d, b, ctx);
@@ -233,7 +290,7 @@ static int test_div_recip(void)
             goto err;
     }
     st = 1;
-err:
+ err:
     BN_free(a);
     BN_free(b);
     BN_free(c);
@@ -242,7 +299,6 @@ err:
     BN_RECP_CTX_free(recp);
     return st;
 }
-
 
 static int test_mod(void)
 {
@@ -259,8 +315,8 @@ static int test_mod(void)
     BN_bntest_rand(a, 1024, 0, 0);
     for (i = 0; i < NUM0; i++) {
         BN_bntest_rand(b, 450 + i * 10, 0, 0);
-        a->neg = rand_neg();
-        b->neg = rand_neg();
+        BN_set_negative(a, rand_neg());
+        BN_set_negative(b, rand_neg());
         BN_mod(c, a, b, ctx);
         BN_div(d, e, a, b, ctx);
         BN_sub(e, e, c);
@@ -268,7 +324,7 @@ static int test_mod(void)
             goto err;
     }
     st = 1;
-err:
+ err:
     BN_free(a);
     BN_free(b);
     BN_free(c);
@@ -420,8 +476,67 @@ static int test_modexp_mont5(void)
     BN_free(b);
     b = BN_dup(a);
     BN_MONT_CTX_set(mont, n, ctx);
-    BN_mod_mul_montgomery(c, a, a, mont, ctx);
-    BN_mod_mul_montgomery(d, a, b, mont, ctx);
+    if (!TEST_true(BN_mod_mul_montgomery(c, a, a, mont, ctx))
+            || !TEST_true(BN_mod_mul_montgomery(d, a, b, mont, ctx))
+            || !TEST_BN_eq(c, d))
+        goto err;
+
+    /* Regression test for bug in BN_from_montgomery_word */
+    BN_hex2bn(&a,
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+    BN_hex2bn(&n,
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+    BN_MONT_CTX_set(mont, n, ctx);
+    if (!TEST_false(BN_mod_mul_montgomery(d, a, a, mont, ctx)))
+        goto err;
+
+    /* Regression test for bug in rsaz_1024_mul_avx2 */
+    BN_hex2bn(&a,
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF2020202020DF");
+    BN_hex2bn(&b,
+        "2020202020202020202020202020202020202020202020202020202020202020"
+        "2020202020202020202020202020202020202020202020202020202020202020"
+        "20202020202020FF202020202020202020202020202020202020202020202020"
+        "2020202020202020202020202020202020202020202020202020202020202020");
+    BN_hex2bn(&n,
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF2020202020FF");
+    BN_MONT_CTX_set(mont, n, ctx);
+    BN_mod_exp_mont_consttime(c, a, b, n, ctx, mont);
+    BN_mod_exp_mont(d, a, b, n, ctx, mont);
+    if (!TEST_BN_eq(c, d))
+        goto err;
+
+    /*
+     * rsaz_1024_mul_avx2 expects fully-reduced inputs.
+     * BN_mod_exp_mont_consttime should reduce the input first.
+     */
+    BN_hex2bn(&a,
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF2020202020DF");
+    BN_hex2bn(&b,
+        "1FA53F26F8811C58BE0357897AA5E165693230BC9DF5F01DFA6A2D59229EC69D"
+        "9DE6A89C36E3B6957B22D6FAAD5A3C73AE587B710DBE92E83D3A9A3339A085CB"
+        "B58F508CA4F837924BB52CC1698B7FDC2FD74362456A595A5B58E38E38E38E38"
+        "E38E38E38E38E38E38E38E38E38E38E38E38E38E38E38E38E38E38E38E38E38E");
+    BN_hex2bn(&n,
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF2020202020DF");
+    BN_MONT_CTX_set(mont, n, ctx);
+    BN_mod_exp_mont_consttime(c, a, b, n, ctx, mont);
+    BN_zero(d);
     if (!TEST_BN_eq(c, d))
         goto err;
 
@@ -454,7 +569,7 @@ static int test_modexp_mont5(void)
 
     st = 1;
 
-err:
+ err:
     BN_MONT_CTX_free(mont);
     BN_free(a);
     BN_free(p);
@@ -481,8 +596,8 @@ static int test_gf2m_add(void)
     for (i = 0; i < NUM0; i++) {
         BN_rand(a, 512, 0, 0);
         BN_copy(b, BN_value_one());
-        a->neg = rand_neg();
-        b->neg = rand_neg();
+        BN_set_negative(a, rand_neg());
+        BN_set_negative(b, rand_neg());
         BN_GF2m_add(c, a, b);
         /* Test that two added values have the correct parity. */
         if (!TEST_false((BN_is_odd(a) && BN_is_odd(c))
@@ -866,27 +981,27 @@ static int test_kronecker(void)
 
     if (!TEST_true(BN_generate_prime_ex(b, 512, 0, NULL, NULL, NULL)))
         goto err;
-    b->neg = rand_neg();
+    BN_set_negative(b, rand_neg());
 
     for (i = 0; i < NUM0; i++) {
         if (!TEST_true(BN_bntest_rand(a, 512, 0, 0)))
             goto err;
-        a->neg = rand_neg();
+        BN_set_negative(a, rand_neg());
 
         /* t := (|b|-1)/2  (note that b is odd) */
         if (!TEST_true(BN_copy(t, b)))
             goto err;
-        t->neg = 0;
+        BN_set_negative(t, 0);
         if (!TEST_true(BN_sub_word(t, 1)))
             goto err;
         if (!TEST_true(BN_rshift1(t, t)))
             goto err;
         /* r := a^t mod b */
-        b->neg = 0;
+        BN_set_negative(b, 0);
 
         if (!TEST_true(BN_mod_exp_recp(r, a, t, b, ctx)))
             goto err;
-        b->neg = 1;
+        BN_set_negative(b, 1);
 
         if (BN_is_word(r, 1))
             legendre = 1;
@@ -905,7 +1020,7 @@ static int test_kronecker(void)
         if (!TEST_int_ge(kronecker = BN_kronecker(a, b, ctx), -1))
             goto err;
         /* we actually need BN_kronecker(a, |b|) */
-        if (a->neg && b->neg)
+        if (BN_is_negative(a) && BN_is_negative(b))
             kronecker = -kronecker;
 
         if (!TEST_int_eq(legendre, kronecker))
@@ -1022,7 +1137,7 @@ static int file_sum(STANZA *s)
     }
     st = 1;
 
-err:
+ err:
     BN_free(a);
     BN_free(b);
     BN_free(sum);
@@ -1071,7 +1186,7 @@ static int file_lshift1(STANZA *s)
         goto err;
 
     st = 1;
-err:
+ err:
     BN_free(a);
     BN_free(lshift1);
     BN_free(zero);
@@ -1100,7 +1215,7 @@ static int file_lshift(STANZA *s)
         goto err;
 
     st = 1;
-err:
+ err:
     BN_free(a);
     BN_free(lshift);
     BN_free(ret);
@@ -1130,7 +1245,7 @@ static int file_rshift(STANZA *s)
     }
     st = 1;
 
-err:
+ err:
     BN_free(a);
     BN_free(rshift);
     BN_free(ret);
@@ -1187,7 +1302,7 @@ static int file_square(STANZA *s)
 #endif
 
     st = 1;
-err:
+ err:
     BN_free(a);
     BN_free(square);
     BN_free(zero);
@@ -1224,7 +1339,7 @@ static int file_product(STANZA *s)
         goto err;
 
     st = 1;
-err:
+ err:
     BN_free(a);
     BN_free(b);
     BN_free(product);
@@ -1307,7 +1422,7 @@ static int file_quotient(STANZA *s)
     }
 
     st = 1;
-err:
+ err:
     BN_free(a);
     BN_free(b);
     BN_free(quotient);
@@ -1361,7 +1476,7 @@ static int file_modmul(STANZA *s)
     }
 
     st = 1;
-err:
+ err:
     BN_free(a);
     BN_free(b);
     BN_free(m);
@@ -1413,7 +1528,7 @@ static int file_modexp(STANZA *s)
         goto err;
 
     st = 1;
-err:
+ err:
     BN_free(a);
     BN_free(b);
     BN_free(c);
@@ -1441,7 +1556,7 @@ static int file_exp(STANZA *s)
         goto err;
 
     st = 1;
-err:
+ err:
     BN_free(a);
     BN_free(e);
     BN_free(exp);
@@ -1472,7 +1587,7 @@ static int file_modsqrt(STANZA *s)
         goto err;
 
     st = 1;
-err:
+ err:
     BN_free(a);
     BN_free(p);
     BN_free(mod_sqrt);
@@ -1502,8 +1617,8 @@ static int test_bn2padded(void)
 
     /* Test a random numbers at various byte lengths. */
     for (size_t bytes = 128 - 7; bytes <= 128; bytes++) {
-#define TOP_BIT_ON 0
-#define BOTTOM_BIT_NOTOUCH 0
+# define TOP_BIT_ON 0
+# define BOTTOM_BIT_NOTOUCH 0
         if (!TEST_true(BN_rand(n, bytes * 8, TOP_BIT_ON, BOTTOM_BIT_NOTOUCH)))
             goto err;
         if (!TEST_int_eq(BN_num_bytes(n),A) bytes
@@ -1534,7 +1649,7 @@ static int test_bn2padded(void)
     }
 
     st = 1;
-err:
+ err:
     BN_free(n);
     return st;
 #else
@@ -1606,7 +1721,7 @@ static int test_dec2bn(void)
         goto err;
 
     st = 1;
-err:
+ err:
     BN_free(bn);
     return st;
 }
@@ -1672,7 +1787,7 @@ static int test_hex2bn(void)
         goto err;
     st = 1;
 
-err:
+ err:
     BN_free(bn);
     return st;
 }
@@ -1726,7 +1841,7 @@ static int test_asc2bn(void)
         goto err;
 
     st = 1;
-err:
+ err:
     BN_free(bn);
     return st;
 }
@@ -1770,7 +1885,7 @@ static int test_mpi(int i)
     BN_free(bn2);
 
     st = 1;
-err:
+ err:
     BN_free(bn);
     return st;
 }
@@ -1796,7 +1911,7 @@ static int test_rand(void)
         goto err;
 
     st = 1;
-err:
+ err:
     BN_free(bn);
     return st;
 }
@@ -1860,7 +1975,7 @@ static int test_negzero(void)
         goto err;
     st = 1;
 
-err:
+ err:
     BN_free(a);
     BN_free(b);
     BN_free(c);
@@ -1901,7 +2016,7 @@ static int test_badmod(void)
     ERR_clear_error();
 
     if (!TEST_false(BN_mod_exp_mont_consttime(a, BN_value_one(), BN_value_one(),
-                                             zero, ctx, NULL)))
+                                              zero, ctx, NULL)))
         goto err;
     ERR_clear_error();
 
@@ -1923,12 +2038,12 @@ static int test_badmod(void)
     ERR_clear_error();
 
     if (!TEST_false(BN_mod_exp_mont_consttime(a, BN_value_one(), BN_value_one(),
-                                  b, ctx, NULL)))
+                                              b, ctx, NULL)))
         goto err;
     ERR_clear_error();
 
     st = 1;
-err:
+ err:
     BN_free(a);
     BN_free(b);
     BN_free(zero);
@@ -1962,11 +2077,58 @@ static int test_expmodzero(void)
         goto err;
 
     st = 1;
-err:
+ err:
     BN_free(zero);
     BN_free(a);
     BN_free(r);
     return st;
+}
+
+static int test_expmodone(void)
+{
+    int ret = 0, i;
+    BIGNUM *r = BN_new();
+    BIGNUM *a = BN_new();
+    BIGNUM *p = BN_new();
+    BIGNUM *m = BN_new();
+
+    if (!TEST_ptr(r)
+            || !TEST_ptr(a)
+            || !TEST_ptr(p)
+            || !TEST_ptr(p)
+            || !TEST_ptr(m)
+            || !TEST_true(BN_set_word(a, 1))
+            || !TEST_true(BN_set_word(p, 0))
+            || !TEST_true(BN_set_word(m, 1)))
+        goto err;
+
+    /* Calculate r = 1 ^ 0 mod 1, and check the result is always 0 */
+    for (i = 0; i < 2; i++) {
+        if (!TEST_true(BN_mod_exp(r, a, p, m, NULL))
+                || !TEST_BN_eq_zero(r)
+                || !TEST_true(BN_mod_exp_mont(r, a, p, m, NULL, NULL))
+                || !TEST_BN_eq_zero(r)
+                || !TEST_true(BN_mod_exp_mont_consttime(r, a, p, m, NULL, NULL))
+                || !TEST_BN_eq_zero(r)
+                || !TEST_true(BN_mod_exp_mont_word(r, 1, p, m, NULL, NULL))
+                || !TEST_BN_eq_zero(r)
+                || !TEST_true(BN_mod_exp_simple(r, a, p, m, NULL))
+                || !TEST_BN_eq_zero(r)
+                || !TEST_true(BN_mod_exp_recp(r, a, p, m, NULL))
+                || !TEST_BN_eq_zero(r))
+            goto err;
+        /* Repeat for r = 1 ^ 0 mod -1 */
+        if (i == 0)
+            BN_set_negative(m, 1);
+    }
+
+    ret = 1;
+ err:
+    BN_free(r);
+    BN_free(a);
+    BN_free(p);
+    BN_free(m);
+    return ret;
 }
 
 static int test_smallprime(void)
@@ -1982,33 +2144,142 @@ static int test_smallprime(void)
         goto err;
 
     st = 1;
-err:
+ err:
     BN_free(r);
     return st;
 }
 
-static int test_3_is_prime(void)
+static int primes[] = { 2, 3, 5, 7, 17863 };
+
+static int test_is_prime(int i)
 {
     int ret = 0;
     BIGNUM *r = NULL;
+    int trial;
 
-    /*
-     * For a long time, small primes were not considered prime when
-     * do_trial_division was set.
-     */
-    if (!TEST_ptr(r = BN_new())
-            || !TEST_true(BN_set_word(r, 3))
-            || !TEST_int_eq(BN_is_prime_fasttest_ex(r, 3 /* nchecks */, ctx,
-                                0 /* do_trial_division */, NULL), 1)
-            || !TEST_int_eq(BN_is_prime_fasttest_ex(r, 3 /* nchecks */, ctx,
-                                1 /* do_trial_division */, NULL), 1))
+    if (!TEST_ptr(r = BN_new()))
         goto err;
 
-    ret = 1;
+    for (trial = 0; trial <= 1; ++trial) {
+        if (!TEST_true(BN_set_word(r, primes[i]))
+                || !TEST_int_eq(BN_is_prime_fasttest_ex(r, 1, ctx, trial, NULL),
+                                1))
+            goto err;
+    }
 
-err:
+    ret = 1;
+ err:
     BN_free(r);
     return ret;
+}
+
+static int not_primes[] = { -1, 0, 1, 4 };
+
+static int test_not_prime(int i)
+{
+    int ret = 0;
+    BIGNUM *r = NULL;
+    int trial;
+
+    if (!TEST_ptr(r = BN_new()))
+        goto err;
+
+    for (trial = 0; trial <= 1; ++trial) {
+        if (!TEST_true(BN_set_word(r, not_primes[i]))
+                || !TEST_false(BN_is_prime_fasttest_ex(r, 1, ctx, trial, NULL)))
+            goto err;
+    }
+
+    ret = 1;
+ err:
+    BN_free(r);
+    return ret;
+}
+
+static int test_ctx_set_ct_flag(BN_CTX *c)
+{
+    int st = 0;
+    size_t i;
+    BIGNUM *b[15];
+
+    BN_CTX_start(c);
+    for (i = 0; i < OSSL_NELEM(b); i++) {
+        if (!TEST_ptr(b[i] = BN_CTX_get(c)))
+            goto err;
+        if (i % 2 == 1)
+            BN_set_flags(b[i], BN_FLG_CONSTTIME);
+    }
+
+    st = 1;
+ err:
+    BN_CTX_end(c);
+    return st;
+}
+
+static int test_ctx_check_ct_flag(BN_CTX *c)
+{
+    int st = 0;
+    size_t i;
+    BIGNUM *b[30];
+
+    BN_CTX_start(c);
+    for (i = 0; i < OSSL_NELEM(b); i++) {
+        if (!TEST_ptr(b[i] = BN_CTX_get(c)))
+            goto err;
+        if (!TEST_false(BN_get_flags(b[i], BN_FLG_CONSTTIME)))
+            goto err;
+    }
+
+    st = 1;
+ err:
+    BN_CTX_end(c);
+    return st;
+}
+
+static int test_ctx_consttime_flag(void)
+{
+    /*-
+     * The constant-time flag should not "leak" among BN_CTX frames:
+     *
+     * - test_ctx_set_ct_flag() starts a frame in the given BN_CTX and
+     *   sets the BN_FLG_CONSTTIME flag on some of the BIGNUMs obtained
+     *   from the frame before ending it.
+     * - test_ctx_check_ct_flag() then starts a new frame and gets a
+     *   number of BIGNUMs from it. In absence of leaks, none of the
+     *   BIGNUMs in the new frame should have BN_FLG_CONSTTIME set.
+     *
+     * In actual BN_CTX usage inside libcrypto the leak could happen at
+     * any depth level in the BN_CTX stack, with varying results
+     * depending on the patterns of sibling trees of nested function
+     * calls sharing the same BN_CTX object, and the effect of
+     * unintended BN_FLG_CONSTTIME on the called BN_* functions.
+     *
+     * This simple unit test abstracts away this complexity and verifies
+     * that the leak does not happen between two sibling functions
+     * sharing the same BN_CTX object at the same level of nesting.
+     *
+     */
+    BN_CTX *nctx = NULL;
+    BN_CTX *sctx = NULL;
+    size_t i = 0;
+    int st = 0;
+
+    if (!TEST_ptr(nctx = BN_CTX_new())
+            || !TEST_ptr(sctx = BN_CTX_secure_new()))
+        goto err;
+
+    for (i = 0; i < 2; i++) {
+        BN_CTX *c = i == 0 ? nctx : sctx;
+        if (!TEST_true(test_ctx_set_ct_flag(c))
+                || !TEST_true(test_ctx_check_ct_flag(c)))
+            goto err;
+    }
+
+    st = 1;
+ err:
+    BN_CTX_free(nctx);
+    BN_CTX_free(sctx);
+    return st;
 }
 
 static int file_test_run(STANZA *s)
@@ -2072,6 +2343,17 @@ static int run_file_tests(int i)
     return c == 0;
 }
 
+const OPTIONS *test_get_options(void)
+{
+    enum { OPT_TEST_ENUM };
+    static const OPTIONS test_options[] = {
+        OPT_TEST_OPTIONS_WITH_EXTRA_USAGE("[file...]\n"),
+        { OPT_HELP_STR, 1, '-',
+          "file\tFile to run tests on. Normal tests are not run\n" },
+        { NULL }
+    };
+    return test_options;
+}
 
 int setup_tests(void)
 {
@@ -2095,7 +2377,10 @@ int setup_tests(void)
         ADD_TEST(test_negzero);
         ADD_TEST(test_badmod);
         ADD_TEST(test_expmodzero);
+        ADD_TEST(test_expmodone);
         ADD_TEST(test_smallprime);
+        ADD_TEST(test_swap);
+        ADD_TEST(test_ctx_consttime_flag);
 #ifndef OPENSSL_NO_EC2M
         ADD_TEST(test_gf2m_add);
         ADD_TEST(test_gf2m_mod);
@@ -2107,7 +2392,8 @@ int setup_tests(void)
         ADD_TEST(test_gf2m_modsqrt);
         ADD_TEST(test_gf2m_modsolvequad);
 #endif
-        ADD_TEST(test_3_is_prime);
+        ADD_ALL_TESTS(test_is_prime, (int)OSSL_NELEM(primes));
+        ADD_ALL_TESTS(test_not_prime, (int)OSSL_NELEM(not_primes));
     } else {
         ADD_ALL_TESTS(run_file_tests, n);
     }

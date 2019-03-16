@@ -1,7 +1,7 @@
 /*
- * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -18,8 +18,6 @@
 
 /* Functions/macros provided by the RECORD_LAYER component */
 
-#define RECORD_LAYER_get_rbuf(rl)               (&(rl)->rbuf)
-#define RECORD_LAYER_get_wbuf(rl)               ((rl)->wbuf)
 #define RECORD_LAYER_get_rrec(rl)               ((rl)->rrec)
 #define RECORD_LAYER_set_packet(rl, p)          ((rl)->packet = (p))
 #define RECORD_LAYER_reset_packet_length(rl)    ((rl)->packet_length = 0)
@@ -80,6 +78,7 @@ int ssl3_release_write_buffer(SSL *s);
 
 #define SSL3_RECORD_get_type(r)                 ((r)->type)
 #define SSL3_RECORD_set_type(r, t)              ((r)->type = (t))
+#define SSL3_RECORD_set_rec_version(r, v)       ((r)->rec_version = (v))
 #define SSL3_RECORD_get_length(r)               ((r)->length)
 #define SSL3_RECORD_set_length(r, l)            ((r)->length = (l))
 #define SSL3_RECORD_add_length(r, l)            ((r)->length += (l))
@@ -89,6 +88,7 @@ int ssl3_release_write_buffer(SSL *s);
 #define SSL3_RECORD_get_input(r)                ((r)->input)
 #define SSL3_RECORD_set_input(r, i)             ((r)->input = (i))
 #define SSL3_RECORD_reset_input(r)              ((r)->input = (r)->data)
+#define SSL3_RECORD_reset_data(r)               ((r)->data = (r)->input)
 #define SSL3_RECORD_get_seq_num(r)              ((r)->seq_num)
 #define SSL3_RECORD_get_off(r)                  ((r)->off)
 #define SSL3_RECORD_set_off(r, o)               ((r)->off = (o))
@@ -114,4 +114,4 @@ __owur int tls1_cbc_remove_padding(const SSL *s,
                                    size_t block_size, size_t mac_size);
 int dtls1_process_record(SSL *s, DTLS1_BITMAP *bitmap);
 __owur int dtls1_get_record(SSL *s);
-int early_data_count_ok(SSL *s, size_t length, size_t overhead, int *al);
+int early_data_count_ok(SSL *s, size_t length, size_t overhead, int send);

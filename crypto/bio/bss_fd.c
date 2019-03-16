@@ -1,7 +1,7 @@
 /*
  * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -58,7 +58,8 @@ static int fd_free(BIO *data);
 int BIO_fd_should_retry(int s);
 
 static const BIO_METHOD methods_fdp = {
-    BIO_TYPE_FD, "file descriptor",
+    BIO_TYPE_FD,
+    "file descriptor",
     /* TODO: Convert to new style write function */
     bwrite_conv,
     fd_write,
@@ -70,7 +71,7 @@ static const BIO_METHOD methods_fdp = {
     fd_ctrl,
     fd_new,
     fd_free,
-    NULL,
+    NULL,                       /* fd_callback_ctrl */
 };
 
 const BIO_METHOD *BIO_s_fd(void)

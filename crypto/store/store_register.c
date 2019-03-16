@@ -1,7 +1,7 @@
 /*
- * Copyright 2016-2017 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -20,7 +20,7 @@ static CRYPTO_ONCE registry_init = CRYPTO_ONCE_STATIC_INIT;
 
 DEFINE_RUN_ONCE_STATIC(do_registry_init)
 {
-    registry_lock = CRYPTO_THREAD_glock_new("registry");
+    registry_lock = CRYPTO_THREAD_lock_new();
     return registry_lock != NULL;
 }
 
@@ -75,6 +75,20 @@ int OSSL_STORE_LOADER_set_ctrl(OSSL_STORE_LOADER *loader,
                                OSSL_STORE_ctrl_fn ctrl_function)
 {
     loader->ctrl = ctrl_function;
+    return 1;
+}
+
+int OSSL_STORE_LOADER_set_expect(OSSL_STORE_LOADER *loader,
+                                 OSSL_STORE_expect_fn expect_function)
+{
+    loader->expect = expect_function;
+    return 1;
+}
+
+int OSSL_STORE_LOADER_set_find(OSSL_STORE_LOADER *loader,
+                               OSSL_STORE_find_fn find_function)
+{
+    loader->find = find_function;
     return 1;
 }
 

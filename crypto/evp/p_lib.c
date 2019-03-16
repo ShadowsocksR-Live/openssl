@@ -1,7 +1,7 @@
 /*
- * Copyright 1995-2017 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -18,6 +18,7 @@
 #include <openssl/rsa.h>
 #include <openssl/dsa.h>
 #include <openssl/dh.h>
+#include <openssl/cmac.h>
 #include <openssl/engine.h>
 
 #include "internal/asn1_int.h"
@@ -41,7 +42,7 @@ int EVP_PKEY_security_bits(const EVP_PKEY *pkey)
     return pkey->ameth->pkey_security_bits(pkey);
 }
 
-int EVP_PKEY_size(EVP_PKEY *pkey)
+int EVP_PKEY_size(const EVP_PKEY *pkey)
 {
     if (pkey && pkey->ameth && pkey->ameth->pkey_size)
         return pkey->ameth->pkey_size(pkey);
@@ -174,10 +175,12 @@ int EVP_PKEY_up_ref(EVP_PKEY *pkey)
  * is NULL just return 1 or 0 if the algorithm exists.
  */
 
-static int pkey_set_type(EVP_PKEY *pkey, int type, const char *str, int len)
+static int pkey_set_type(EVP_PKEY *pkey, ENGINE *e, int type, const char *str,
+                         int len)
 {
     const EVP_PKEY_ASN1_METHOD *ameth;
-    ENGINE *e = NULL;
+    ENGINE **eptr = (e == NULL) ? &e :  NULL;
+
     if (pkey) {
         if (pkey->pkey.ptr)
             EVP_PKEY_free_it(pkey);
@@ -196,11 +199,11 @@ static int pkey_set_type(EVP_PKEY *pkey, int type, const char *str, int len)
 #endif
     }
     if (str)
-        ameth = EVP_PKEY_asn1_find_str(&e, str, len);
+        ameth = EVP_PKEY_asn1_find_str(eptr, str, len);
     else
-        ameth = EVP_PKEY_asn1_find(&e, type);
+        ameth = EVP_PKEY_asn1_find(eptr, type);
 #ifndef OPENSSL_NO_ENGINE
-    if (pkey == NULL)
+    if (pkey == NULL && eptr != NULL)
         ENGINE_finish(e);
 #endif
     if (ameth == NULL) {
@@ -217,15 +220,164 @@ static int pkey_set_type(EVP_PKEY *pkey, int type, const char *str, int len)
     return 1;
 }
 
+EVP_PKEY *EVP_PKEY_new_raw_private_key(int type, ENGINE *e,
+                                       const unsigned char *priv,
+                                       size_t len)
+{
+    EVP_PKEY *ret = EVP_PKEY_new();
+
+    if (ret == NULL
+            || !pkey_set_type(ret, e, type, NULL, -1)) {
+        /* EVPerr already called */
+        goto err;
+    }
+
+    if (ret->ameth->set_priv_key == NULL) {
+        EVPerr(EVP_F_EVP_PKEY_NEW_RAW_PRIVATE_KEY,
+               EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
+        goto err;
+    }
+
+    if (!ret->ameth->set_priv_key(ret, priv, len)) {
+        EVPerr(EVP_F_EVP_PKEY_NEW_RAW_PRIVATE_KEY, EVP_R_KEY_SETUP_FAILED);
+        goto err;
+    }
+
+    return ret;
+
+ err:
+    EVP_PKEY_free(ret);
+    return NULL;
+}
+
+EVP_PKEY *EVP_PKEY_new_raw_public_key(int type, ENGINE *e,
+                                      const unsigned char *pub,
+                                      size_t len)
+{
+    EVP_PKEY *ret = EVP_PKEY_new();
+
+    if (ret == NULL
+            || !pkey_set_type(ret, e, type, NULL, -1)) {
+        /* EVPerr already called */
+        goto err;
+    }
+
+    if (ret->ameth->set_pub_key == NULL) {
+        EVPerr(EVP_F_EVP_PKEY_NEW_RAW_PUBLIC_KEY,
+               EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
+        goto err;
+    }
+
+    if (!ret->ameth->set_pub_key(ret, pub, len)) {
+        EVPerr(EVP_F_EVP_PKEY_NEW_RAW_PUBLIC_KEY, EVP_R_KEY_SETUP_FAILED);
+        goto err;
+    }
+
+    return ret;
+
+ err:
+    EVP_PKEY_free(ret);
+    return NULL;
+}
+
+int EVP_PKEY_get_raw_private_key(const EVP_PKEY *pkey, unsigned char *priv,
+                                 size_t *len)
+{
+     if (pkey->ameth->get_priv_key == NULL) {
+        EVPerr(EVP_F_EVP_PKEY_GET_RAW_PRIVATE_KEY,
+               EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
+        return 0;
+    }
+
+    if (!pkey->ameth->get_priv_key(pkey, priv, len)) {
+        EVPerr(EVP_F_EVP_PKEY_GET_RAW_PRIVATE_KEY, EVP_R_GET_RAW_KEY_FAILED);
+        return 0;
+    }
+
+    return 1;
+}
+
+int EVP_PKEY_get_raw_public_key(const EVP_PKEY *pkey, unsigned char *pub,
+                                size_t *len)
+{
+     if (pkey->ameth->get_pub_key == NULL) {
+        EVPerr(EVP_F_EVP_PKEY_GET_RAW_PUBLIC_KEY,
+               EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
+        return 0;
+    }
+
+    if (!pkey->ameth->get_pub_key(pkey, pub, len)) {
+        EVPerr(EVP_F_EVP_PKEY_GET_RAW_PUBLIC_KEY, EVP_R_GET_RAW_KEY_FAILED);
+        return 0;
+    }
+
+    return 1;
+}
+
+EVP_PKEY *EVP_PKEY_new_CMAC_key(ENGINE *e, const unsigned char *priv,
+                                size_t len, const EVP_CIPHER *cipher)
+{
+#ifndef OPENSSL_NO_CMAC
+    EVP_PKEY *ret = EVP_PKEY_new();
+    EVP_MAC_CTX *cmctx = EVP_MAC_CTX_new_id(EVP_MAC_CMAC);
+
+    if (ret == NULL
+            || cmctx == NULL
+            || !pkey_set_type(ret, e, EVP_PKEY_CMAC, NULL, -1)) {
+        /* EVPerr already called */
+        goto err;
+    }
+
+    if (EVP_MAC_ctrl(cmctx, EVP_MAC_CTRL_SET_ENGINE, e) <= 0
+        || EVP_MAC_ctrl(cmctx, EVP_MAC_CTRL_SET_CIPHER, cipher) <= 0
+        || EVP_MAC_ctrl(cmctx, EVP_MAC_CTRL_SET_KEY, priv, len) <= 0) {
+        EVPerr(EVP_F_EVP_PKEY_NEW_CMAC_KEY, EVP_R_KEY_SETUP_FAILED);
+        goto err;
+    }
+
+    ret->pkey.ptr = cmctx;
+    return ret;
+
+ err:
+    EVP_PKEY_free(ret);
+    EVP_MAC_CTX_free(cmctx);
+    return NULL;
+#else
+    EVPerr(EVP_F_EVP_PKEY_NEW_CMAC_KEY,
+           EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
+    return NULL;
+#endif
+}
+
 int EVP_PKEY_set_type(EVP_PKEY *pkey, int type)
 {
-    return pkey_set_type(pkey, type, NULL, -1);
+    return pkey_set_type(pkey, NULL, type, NULL, -1);
 }
 
 int EVP_PKEY_set_type_str(EVP_PKEY *pkey, const char *str, int len)
 {
-    return pkey_set_type(pkey, EVP_PKEY_NONE, str, len);
+    return pkey_set_type(pkey, NULL, EVP_PKEY_NONE, str, len);
 }
+
+int EVP_PKEY_set_alias_type(EVP_PKEY *pkey, int type)
+{
+    if (pkey->type == type) {
+        return 1; /* it already is that type */
+    }
+
+    /*
+     * The application is requesting to alias this to a different pkey type,
+     * but not one that resolves to the base type.
+     */
+    if (EVP_PKEY_type(type) != EVP_PKEY_base_id(pkey)) {
+        EVPerr(EVP_F_EVP_PKEY_SET_ALIAS_TYPE, EVP_R_UNSUPPORTED_ALGORITHM);
+        return 0;
+    }
+
+    pkey->type = type;
+    return 1;
+}
+
 #ifndef OPENSSL_NO_ENGINE
 int EVP_PKEY_set1_engine(EVP_PKEY *pkey, ENGINE *e)
 {
@@ -308,7 +460,7 @@ int EVP_PKEY_set1_RSA(EVP_PKEY *pkey, RSA *key)
     return ret;
 }
 
-RSA *EVP_PKEY_get0_RSA(EVP_PKEY *pkey)
+RSA *EVP_PKEY_get0_RSA(const EVP_PKEY *pkey)
 {
     if (pkey->type != EVP_PKEY_RSA) {
         EVPerr(EVP_F_EVP_PKEY_GET0_RSA, EVP_R_EXPECTING_AN_RSA_KEY);
@@ -335,7 +487,7 @@ int EVP_PKEY_set1_DSA(EVP_PKEY *pkey, DSA *key)
     return ret;
 }
 
-DSA *EVP_PKEY_get0_DSA(EVP_PKEY *pkey)
+DSA *EVP_PKEY_get0_DSA(const EVP_PKEY *pkey)
 {
     if (pkey->type != EVP_PKEY_DSA) {
         EVPerr(EVP_F_EVP_PKEY_GET0_DSA, EVP_R_EXPECTING_A_DSA_KEY);
@@ -363,7 +515,7 @@ int EVP_PKEY_set1_EC_KEY(EVP_PKEY *pkey, EC_KEY *key)
     return ret;
 }
 
-EC_KEY *EVP_PKEY_get0_EC_KEY(EVP_PKEY *pkey)
+EC_KEY *EVP_PKEY_get0_EC_KEY(const EVP_PKEY *pkey)
 {
     if (pkey->type != EVP_PKEY_EC) {
         EVPerr(EVP_F_EVP_PKEY_GET0_EC_KEY, EVP_R_EXPECTING_A_EC_KEY);
@@ -391,7 +543,7 @@ int EVP_PKEY_set1_DH(EVP_PKEY *pkey, DH *key)
     return ret;
 }
 
-DH *EVP_PKEY_get0_DH(EVP_PKEY *pkey)
+DH *EVP_PKEY_get0_DH(const EVP_PKEY *pkey)
 {
     if (pkey->type != EVP_PKEY_DH && pkey->type != EVP_PKEY_DHX) {
         EVPerr(EVP_F_EVP_PKEY_GET0_DH, EVP_R_EXPECTING_A_DH_KEY);
@@ -513,6 +665,26 @@ static int evp_pkey_asn1_ctrl(EVP_PKEY *pkey, int op, int arg1, void *arg2)
 int EVP_PKEY_get_default_digest_nid(EVP_PKEY *pkey, int *pnid)
 {
     return evp_pkey_asn1_ctrl(pkey, ASN1_PKEY_CTRL_DEFAULT_MD_NID, 0, pnid);
+}
+
+int EVP_PKEY_supports_digest_nid(EVP_PKEY *pkey, int nid)
+{
+    int rv, default_nid;
+
+    rv = evp_pkey_asn1_ctrl(pkey, ASN1_PKEY_CTRL_SUPPORTS_MD_NID, nid, NULL);
+    if (rv == -2) {
+        /*
+         * If there is a mandatory default digest and this isn't it, then
+         * the answer is 'no'.
+         */
+        rv = EVP_PKEY_get_default_digest_nid(pkey, &default_nid);
+        if (rv == 2)
+            return (nid == default_nid);
+        /* zero is an error from EVP_PKEY_get_default_digest_nid() */
+        if (rv == 0)
+            return -1;
+    }
+    return rv;
 }
 
 int EVP_PKEY_set1_tls_encodedpoint(EVP_PKEY *pkey,

@@ -1,14 +1,13 @@
 /*
- * Copyright 2016-2017 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
  */
 
 #include <ctype.h>
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,7 +18,7 @@
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 #include "testutil.h"
-#include "openssl/crypto.h"
+#include <openssl/crypto.h>
 
 #ifndef OPENSSL_NO_CT
 /* Used when declaring buffers to read text files into */
@@ -64,7 +63,7 @@ static CT_TEST_FIXTURE *set_up(const char *const test_case_name)
     if (!TEST_ptr(fixture = OPENSSL_zalloc(sizeof(*fixture))))
         goto end;
     fixture->test_case_name = test_case_name;
-    fixture->epoch_time_in_ms = 1473269626000; /* Sep 7 17:33:46 2016 GMT */
+    fixture->epoch_time_in_ms = 1473269626000ULL; /* Sep 7 17:33:46 2016 GMT */
     if (!TEST_ptr(fixture->ctlog_store = CTLOG_STORE_new())
             || !TEST_int_eq(
                     CTLOG_STORE_load_default_file(fixture->ctlog_store), 1))
@@ -297,7 +296,8 @@ static int execute_cert_test(CT_TEST_FIXTURE *fixture)
             for (i = 0; i < sk_SCT_num(scts); ++i) {
                 SCT *sct_i = sk_SCT_value(scts, i);
 
-                if (!TEST_int_eq(SCT_get_source(sct_i), SCT_SOURCE_X509V3_EXTENSION)) {
+                if (!TEST_int_eq(SCT_get_source(sct_i),
+                                 SCT_SOURCE_X509V3_EXTENSION)) {
                     goto end;
                 }
             }
@@ -423,7 +423,7 @@ static int test_verify_fails_for_future_sct(void)
     SETUP_CT_TEST_FIXTURE();
     if (fixture == NULL)
         return 0;
-    fixture->epoch_time_in_ms = 1365094800000; /* Apr 4 17:00:00 2013 GMT */
+    fixture->epoch_time_in_ms = 1365094800000ULL; /* Apr 4 17:00:00 2013 GMT */
     fixture->certs_dir = certs_dir;
     fixture->certificate_file = "embeddedSCTs1.pem";
     fixture->issuer_file = "embeddedSCTs1_issuer.pem";
@@ -500,12 +500,12 @@ static int test_default_ct_policy_eval_ctx_time_is_now(void)
 {
     int success = 0;
     CT_POLICY_EVAL_CTX *ct_policy_ctx = CT_POLICY_EVAL_CTX_new();
-    const time_t default_time = CT_POLICY_EVAL_CTX_get_time(ct_policy_ctx) /
-                                1000;
+    const time_t default_time =
+        (time_t)(CT_POLICY_EVAL_CTX_get_time(ct_policy_ctx) / 1000);
     const time_t time_tolerance = 600;  /* 10 minutes */
 
-    if (!TEST_uint_le((unsigned int)fabs(difftime(time(NULL), default_time)),
-                      (unsigned int)time_tolerance))
+    if (!TEST_time_t_le(abs((int)difftime(time(NULL), default_time)),
+                        time_tolerance))
         goto end;
 
     success = 1;

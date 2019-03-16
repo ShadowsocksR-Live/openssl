@@ -1,7 +1,7 @@
 /*
- * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2018 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -316,16 +316,18 @@ BIO *PKCS7_dataInit(PKCS7 *p7, BIO *bio)
     }
 
     if (bio == NULL) {
-        if (PKCS7_is_detached(p7))
+        if (PKCS7_is_detached(p7)) {
             bio = BIO_new(BIO_s_null());
-        else if (os && os->length > 0)
+        } else if (os && os->length > 0) {
             bio = BIO_new_mem_buf(os->data, os->length);
-        if (bio == NULL) {
+        } else {
             bio = BIO_new(BIO_s_mem());
             if (bio == NULL)
                 goto err;
             BIO_set_mem_eof_return(bio, 0);
         }
+        if (bio == NULL)
+            goto err;
     }
     if (out)
         BIO_push(out, bio);

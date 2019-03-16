@@ -1,7 +1,7 @@
 #! /usr/bin/env perl
-# Copyright 2007-2016 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2007-2018 The OpenSSL Project Authors. All Rights Reserved.
 #
-# Licensed under the OpenSSL license (the "License").  You may not use
+# Licensed under the Apache License 2.0 (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
 # in the file LICENSE in the source distribution or at
 # https://www.openssl.org/source/license.html
@@ -76,7 +76,6 @@ $code=<<___;
 # define __ARM_ARCH__ __LINUX_ARM_ARCH__
 #endif
 
-.text
 #if defined(__thumb2__) && !defined(__APPLE__)
 .syntax	unified
 .thumb
@@ -84,6 +83,8 @@ $code=<<___;
 .code	32
 #undef __thumb2__
 #endif
+
+.text
 
 .type	AES_Te,%object
 .align	5
@@ -203,7 +204,7 @@ AES_encrypt:
 	adr	r3,.
 #endif
 	stmdb   sp!,{r1,r4-r12,lr}
-#ifdef	__APPLE__
+#if defined(__thumb2__) || defined(__APPLE__)
 	adr	$tbl,AES_Te
 #else
 	sub	$tbl,r3,#AES_encrypt-AES_Te	@ Te
@@ -481,7 +482,7 @@ _armv4_AES_set_encrypt_key:
 	mov	lr,r1			@ bits
 	mov	$key,r2			@ key
 
-#ifdef	__APPLE__
+#if defined(__thumb2__) || defined(__APPLE__)
 	adr	$tbl,AES_Te+1024				@ Te4
 #else
 	sub	$tbl,r3,#_armv4_AES_set_encrypt_key-AES_Te-1024	@ Te4
@@ -979,7 +980,7 @@ AES_decrypt:
 	adr	r3,.
 #endif
 	stmdb   sp!,{r1,r4-r12,lr}
-#ifdef	__APPLE__
+#if defined(__thumb2__) || defined(__APPLE__)
 	adr	$tbl,AES_Td
 #else
 	sub	$tbl,r3,#AES_decrypt-AES_Td	@ Td
