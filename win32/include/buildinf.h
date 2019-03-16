@@ -4,14 +4,14 @@
  *
  * Copyright 2014-2017 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
  */
 
-#define PLATFORM "platform: "
-#define DATE "built on: Tue Dec  5 14:27:59 2017 UTC"
+#define PLATFORM "platform: VC-WIN32"
+#define DATE "built on: Sat Mar 16 09:59:03 2019 UTC"
 
 /*
  * Generate compiler_flags as an array of individual characters. This is a
@@ -19,6 +19,28 @@
  * literal
  */
 static const char compiler_flags[] = {
-    'c','o','m','p','i','l','e','r',':',' ','c','l',' ','"',' ','"',
-    'V','C','-','W','I','N','6','4','A','\0'
+    'c','o','m','p','i','l','e','r',':',' ','c','l',' ','/','Z','i',
+    ' ','/','F','d','o','s','s','l','_','s','t','a','t','i','c','.',
+    'p','d','b',' ','/','G','s','0',' ','/','G','F',' ','/','G','y',
+    ' ','/','M','D',' ','/','W','3',' ','/','w','d','4','0','9','0',
+    ' ','/','n','o','l','o','g','o',' ','/','O','2',' ','/','W','X',
+    ' ','-','D','L','_','E','N','D','I','A','N',' ','-','D','O','P',
+    'E','N','S','S','L','_','P','I','C',' ','-','D','O','P','E','N',
+    'S','S','L','_','C','P','U','I','D','_','O','B','J',' ','-','D',
+    'O','P','E','N','S','S','L','_','B','N','_','A','S','M','_','P',
+    'A','R','T','_','W','O','R','D','S',' ','-','D','O','P','E','N',
+    'S','S','L','_','I','A','3','2','_','S','S','E','2',' ','-','D',
+    'O','P','E','N','S','S','L','_','B','N','_','A','S','M','_','M',
+    'O','N','T',' ','-','D','O','P','E','N','S','S','L','_','B','N',
+    '_','A','S','M','_','G','F','2','m',' ','-','D','S','H','A','1',
+    '_','A','S','M',' ','-','D','S','H','A','2','5','6','_','A','S',
+    'M',' ','-','D','S','H','A','5','1','2','_','A','S','M',' ','-',
+    'D','R','C','4','_','A','S','M',' ','-','D','M','D','5','_','A',
+    'S','M',' ','-','D','R','M','D','1','6','0','_','A','S','M',' ',
+    '-','D','A','E','S','_','A','S','M',' ','-','D','V','P','A','E',
+    'S','_','A','S','M',' ','-','D','W','H','I','R','L','P','O','O',
+    'L','_','A','S','M',' ','-','D','G','H','A','S','H','_','A','S',
+    'M',' ','-','D','E','C','P','_','N','I','S','T','Z','2','5','6',
+    '_','A','S','M',' ','-','D','P','O','L','Y','1','3','0','5','_',
+    'A','S','M','\0'
 };

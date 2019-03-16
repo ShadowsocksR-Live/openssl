@@ -124,6 +124,7 @@ $L$intel:
 $L$nocacheinfo:
 	mov	eax,1
 	cpuid
+	movd	xmm0,eax
 	and	edx,0xbfefffff
 	cmp	r9d,0
 	jne	NEAR $L$notintel
@@ -171,6 +172,13 @@ $L$generic:
 	jc	NEAR $L$notknights
 	and	ebx,0xfff7ffff
 $L$notknights:
+	movd	eax,xmm0
+	and	eax,0x0fff0ff0
+	cmp	eax,0x00050650
+	jne	NEAR $L$notskylakex
+	and	ebx,0xfffeffff
+
+$L$notskylakex:
 	mov	DWORD[8+rdi],ebx
 	mov	DWORD[12+rdi],ecx
 $L$no_extended_info:
@@ -250,6 +258,18 @@ CRYPTO_memcmp:
 	xor	r10,r10
 	cmp	r8,0
 	je	NEAR $L$no_data
+	cmp	r8,16
+	jne	NEAR $L$oop_cmp
+	mov	r10,QWORD[rcx]
+	mov	r11,QWORD[8+rcx]
+	mov	r8,1
+	xor	r10,QWORD[rdx]
+	xor	r11,QWORD[8+rdx]
+	or	r10,r11
+	cmovnz	rax,r8
+	DB	0F3h,0C3h		;repret
+
+ALIGN	16
 $L$oop_cmp:
 	mov	r10b,BYTE[rcx]
 	lea	rcx,[1+rcx]
@@ -361,21 +381,6 @@ $L$done2:
 	sub	rax,rcx
 	DB	0F3h,0C3h		;repret
 
-global	OPENSSL_ia32_rdrand
-
-ALIGN	16
-OPENSSL_ia32_rdrand:
-	mov	ecx,8
-$L$oop_rdrand:
-DB	72,15,199,240
-	jc	NEAR $L$break_rdrand
-	loop	$L$oop_rdrand
-$L$break_rdrand:
-	cmp	rax,0
-	cmove	rax,rcx
-	DB	0F3h,0C3h		;repret
-
-
 global	OPENSSL_ia32_rdrand_bytes
 
 ALIGN	16
@@ -409,27 +414,13 @@ $L$tail_rdrand_bytes:
 	mov	BYTE[rcx],r10b
 	lea	rcx,[1+rcx]
 	inc	rax
-	shr	r8,8
+	shr	r10,8
 	dec	rdx
 	jnz	NEAR $L$tail_rdrand_bytes
 
 $L$done_rdrand_bytes:
+	xor	r10,r10
 	DB	0F3h,0C3h		;repret
-
-global	OPENSSL_ia32_rdseed
-
-ALIGN	16
-OPENSSL_ia32_rdseed:
-	mov	ecx,8
-$L$oop_rdseed:
-DB	72,15,199,248
-	jc	NEAR $L$break_rdseed
-	loop	$L$oop_rdseed
-$L$break_rdseed:
-	cmp	rax,0
-	cmove	rax,rcx
-	DB	0F3h,0C3h		;repret
-
 
 global	OPENSSL_ia32_rdseed_bytes
 
@@ -464,10 +455,11 @@ $L$tail_rdseed_bytes:
 	mov	BYTE[rcx],r10b
 	lea	rcx,[1+rcx]
 	inc	rax
-	shr	r8,8
+	shr	r10,8
 	dec	rdx
 	jnz	NEAR $L$tail_rdseed_bytes
 
 $L$done_rdseed_bytes:
+	xor	r10,r10
 	DB	0F3h,0C3h		;repret
 
