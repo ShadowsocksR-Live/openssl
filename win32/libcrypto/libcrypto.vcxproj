@@ -431,6 +431,7 @@
     <ClCompile Include="..\..\crypto\crmf\crmf_lib.c" />
     <ClCompile Include="..\..\crypto\crmf\crmf_pbm.c" />
     <ClCompile Include="..\..\crypto\cryptlib.c" />
+    <ClCompile Include="..\..\crypto\ctype.c" />
     <ClCompile Include="..\..\crypto\ct\ct_b64.c" />
     <ClCompile Include="..\..\crypto\ct\ct_err.c" />
     <ClCompile Include="..\..\crypto\ct\ct_log.c" />
@@ -1049,7 +1050,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="ctype.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\crypto\aes\aes_locl.h" />
