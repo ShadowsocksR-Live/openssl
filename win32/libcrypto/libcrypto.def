@@ -1810,6 +1810,7 @@ EXPORTS
     EVP_PKEY_get0_EC_KEY
     EVP_PKEY_get0_RSA
     EVP_PKEY_get0_asn1
+    EVP_PKEY_get0_engine
     EVP_PKEY_get0_hmac
     EVP_PKEY_get0_poly1305
     EVP_PKEY_get0_siphash

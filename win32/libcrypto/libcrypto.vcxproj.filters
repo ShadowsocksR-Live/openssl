@@ -2321,6 +2321,12 @@
     <ClCompile Include="..\..\crypto\ctype.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\crypto\kdf\sskdf.c">
+      <Filter>kdf</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\crypto\provider_predefined.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\crypto\aes\aes_locl.h">

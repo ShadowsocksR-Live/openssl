@@ -89,6 +89,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;OPENSSL_USE_APPLINK;DSO_WIN32;OPENSSL_THREADS;OPENSSL_NO_STATIC_ENGINE;OPENSSL_PIC;OPENSSL_SYS_WIN32;OPENSSL_CPUID_OBJ;WIN32_LEAN_AND_MEAN;_WINSOCK_DEPRECATED_NO_WARNINGS;L_ENDIAN;_CRT_SECURE_NO_DEPRECATE;ENGINESDIR="C:/Program Files (x86)/OpenSSL/lib/engines-1_1";OPENSSLDIR="C:/Program Files (x86)/Common Files/SSL";MODULESDIR="C:/Program Files (x86)/OpenSSL/lib";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)../include;$(ProjectDir)../..;$(ProjectDir)../../include;$(ProjectDir)../../crypto/include;$(ProjectDir)../../crypto/modes;$(ProjectDir)../../crypto/ec/curve448/arch_32;$(ProjectDir)../../crypto/ec/curve448;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -105,6 +106,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;OPENSSL_USE_APPLINK;DSO_WIN32;OPENSSL_THREADS;OPENSSL_NO_STATIC_ENGINE;OPENSSL_PIC;OPENSSL_SYS_WIN32;OPENSSL_CPUID_OBJ;WIN32_LEAN_AND_MEAN;_WINSOCK_DEPRECATED_NO_WARNINGS;L_ENDIAN;_CRT_SECURE_NO_DEPRECATE;ENGINESDIR="C:/Program Files (x86)/OpenSSL/lib/engines-1_1";OPENSSLDIR="C:/Program Files (x86)/Common Files/SSL";MODULESDIR="C:/Program Files (x86)/OpenSSL/lib";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)../include;$(ProjectDir)../..;$(ProjectDir)../../include;$(ProjectDir)../../crypto/include;$(ProjectDir)../../crypto/modes;$(ProjectDir)../../crypto/ec/curve448/arch_32;$(ProjectDir)../../crypto/ec/curve448;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -123,6 +125,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;OPENSSL_USE_APPLINK;DSO_WIN32;OPENSSL_THREADS;OPENSSL_NO_STATIC_ENGINE;OPENSSL_PIC;OPENSSL_SYS_WIN32;OPENSSL_CPUID_OBJ;WIN32_LEAN_AND_MEAN;_WINSOCK_DEPRECATED_NO_WARNINGS;L_ENDIAN;_CRT_SECURE_NO_DEPRECATE;ENGINESDIR="C:/Program Files (x86)/OpenSSL/lib/engines-1_1";OPENSSLDIR="C:/Program Files (x86)/Common Files/SSL";MODULESDIR="C:/Program Files (x86)/OpenSSL/lib";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)../include;$(ProjectDir)../..;$(ProjectDir)../../include;$(ProjectDir)../../crypto/include;$(ProjectDir)../../crypto/modes;$(ProjectDir)../../crypto/ec/curve448/arch_32;$(ProjectDir)../../crypto/ec/curve448;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -143,6 +146,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;OPENSSL_USE_APPLINK;DSO_WIN32;OPENSSL_THREADS;OPENSSL_NO_STATIC_ENGINE;OPENSSL_PIC;OPENSSL_SYS_WIN32;OPENSSL_CPUID_OBJ;WIN32_LEAN_AND_MEAN;_WINSOCK_DEPRECATED_NO_WARNINGS;L_ENDIAN;_CRT_SECURE_NO_DEPRECATE;ENGINESDIR="C:/Program Files (x86)/OpenSSL/lib/engines-1_1";OPENSSLDIR="C:/Program Files (x86)/Common Files/SSL";MODULESDIR="C:/Program Files (x86)/OpenSSL/lib";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)../include;$(ProjectDir)../..;$(ProjectDir)../../include;$(ProjectDir)../../crypto/include;$(ProjectDir)../../crypto/modes;$(ProjectDir)../../crypto/ec/curve448/arch_32;$(ProjectDir)../../crypto/ec/curve448;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -671,6 +675,7 @@
     <ClCompile Include="..\..\crypto\kdf\pbkdf2.c" />
     <ClCompile Include="..\..\crypto\kdf\scrypt.c" />
     <ClCompile Include="..\..\crypto\kdf\sshkdf.c" />
+    <ClCompile Include="..\..\crypto\kdf\sskdf.c" />
     <ClCompile Include="..\..\crypto\kdf\tls1_prf.c" />
     <ClCompile Include="..\..\crypto\kmac\kmac.c" />
     <ClCompile Include="..\..\crypto\lhash\lhash.c" />
@@ -834,6 +839,7 @@
     <ClCompile Include="..\..\crypto\property\property_string.c" />
     <ClCompile Include="..\..\crypto\provider.c" />
     <ClCompile Include="..\..\crypto\provider_core.c" />
+    <ClCompile Include="..\..\crypto\provider_predefined.c" />
     <ClCompile Include="..\..\crypto\rand\drbg_ctr.c" />
     <ClCompile Include="..\..\crypto\rand\drbg_hash.c" />
     <ClCompile Include="..\..\crypto\rand\drbg_hmac.c" />
